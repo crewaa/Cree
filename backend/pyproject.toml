@@ -1,0 +1,43 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "FastAPI Modular Monolith Backend"
+requires-python = ">=3.11"
+
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+  "pydantic-settings",
+  "python-dotenv",
+
+  # Database
+  "sqlalchemy>=2.0",
+  "asyncpg",
+  "alembic",
+  "psycopg2-binary",
+
+  # Auth & Security
+  "python-jose[cryptography]",
+  "bcrypt==3.2.2",
+  "passlib[bcrypt]==1.7.4",
+  "pydantic[email]",
+
+  # OAuth
+  "httpx",
+
+  # Utilities
+  "loguru",
+  "python-dateutil",
+
+  # AI Engine
+  "google-generativeai",
+
+  # Apify & Cache
+  "apify-client",
+  "redis",
+
+  # Testing
+  "pytest",
+  "pytest-asyncio"
+]

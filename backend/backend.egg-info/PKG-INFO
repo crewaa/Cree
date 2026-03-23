@@ -1,0 +1,24 @@
+Metadata-Version: 2.4
+Name: backend
+Version: 0.1.0
+Summary: FastAPI Modular Monolith Backend
+Requires-Python: >=3.11
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: pydantic
+Requires-Dist: pydantic-settings
+Requires-Dist: python-dotenv
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: asyncpg
+Requires-Dist: alembic
+Requires-Dist: psycopg2-binary
+Requires-Dist: python-jose[cryptography]
+Requires-Dist: bcrypt==3.2.2
+Requires-Dist: passlib[bcrypt]==1.7.4
+Requires-Dist: pydantic[email]
+Requires-Dist: httpx
+Requires-Dist: loguru
+Requires-Dist: python-dateutil
+Requires-Dist: google-generativeai
+Requires-Dist: pytest
+Requires-Dist: pytest-asyncio

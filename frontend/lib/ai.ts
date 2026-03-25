@@ -16,3 +16,8 @@ export async function getBrandDeals() {
   const res = await api.post("/ai/brand-deals")
   return res.data
 }
+
+export async function getCreatorSummary() {
+  const res = await api.post("/ai/creator-summary")
+  return res.data
+}

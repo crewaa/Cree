@@ -63,3 +63,21 @@ class BrandProfileResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+from datetime import datetime
+
+class SavedCreatorResponse(BaseModel):
+    id: int
+    brand_id: int
+    creator_id: int
+    fit_level: str
+    score_reasoning: str | None
+    saved_at: datetime
+    
+    # We will include basic creator info for the dashboard
+    creator_name: str | None = None
+    creator_category: str | None = None
+    creator_platform: str | None = None
+
+    class Config:
+        from_attributes = True

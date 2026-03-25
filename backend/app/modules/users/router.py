@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from app.common.dependencies import get_current_user, get_db
 from app.modules.users.schemas import (
     UserResponse, CreatorProfileCreate, CreatorProfileResponse,
-    BrandProfileCreate, BrandProfileResponse
+    BrandProfileCreate, BrandProfileResponse, SavedCreatorResponse
 )
-from app.modules.users.models import User, CreatorProfile, BrandProfile
+from app.modules.users.models import User, CreatorProfile, BrandProfile, SavedCreator
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.users.service import create_creator_profile, create_brand_profile
 from app.modules.instagram.services.instagram_scrapper import scrape_and_store
@@ -226,3 +226,45 @@ async def update_brand_profile(
     await db.commit()
     await db.refresh(profile)
     return profile
+
+
+# =====================
+# Saved Creators
+# =====================
+
+@router.get(
+    "/saved-creators",
+    response_model=list[SavedCreatorResponse],
+)
+async def get_saved_creators(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "BRAND":
+        raise HTTPException(403, "Only brands can access saved creators")
+
+    # Fetch saved creators with their basic creator details
+    result = await db.execute(
+        select(SavedCreator, CreatorProfile)
+        .join(CreatorProfile, CreatorProfile.user_id == SavedCreator.creator_id)
+        .where(SavedCreator.brand_id == current_user.id)
+        .order_by(SavedCreator.saved_at.desc())
+    )
+    
+    rows = result.all()
+    
+    response = []
+    for saved, profile in rows:
+        response.append(SavedCreatorResponse(
+            id=saved.id,
+            brand_id=saved.brand_id,
+            creator_id=saved.creator_id,
+            fit_level=saved.fit_level,
+            score_reasoning=saved.score_reasoning,
+            saved_at=saved.saved_at,
+            creator_name=profile.full_name,
+            creator_category=profile.category,
+            creator_platform=profile.primary_platform,
+        ))
+        
+    return response

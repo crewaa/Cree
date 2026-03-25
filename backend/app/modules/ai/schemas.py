@@ -41,3 +41,12 @@ class BrandDealOpportunity(BaseModel):
 class BrandDealsResponse(BaseModel):
     opportunities: list[BrandDealOpportunity]
     total: int
+
+
+class CreatorSummaryResponse(BaseModel):
+    creator_id: str | None = None
+    summary: str | None = None
+    strengths: list[str] | None = None
+    improvement_areas: list[str] | None = None
+    best_brand_categories: list[str] | None = None
+    recommended_content_formats: list[str] | None = None

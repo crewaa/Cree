@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { FadeIn } from "@/components/motion/fade-in"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -11,26 +12,34 @@ import Link from "next/link"
 import { GoogleAuthButton } from "@/components/auth/google-signup-button"
 
 export default function InfluencerSignupPage() {
-
   const router = useRouter()
-  
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-      e.preventDefault()
-  
-      const form = e.currentTarget
-      const email = (form.elements.namedItem("email") as HTMLInputElement).value
-      const password = (form.elements.namedItem("password") as HTMLInputElement).value
-  
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const form = e.currentTarget
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value
+    const password = (form.elements.namedItem("password") as HTMLInputElement).value
+
+    try {
       const data = await signup({
         email,
         password,
         role: "INFLUENCER",
       })
-  
+
       localStorage.setItem("access_token", data.access_token)
-  
       router.push("/dashboard/influencer")
+    } catch (err: any) {
+      setError(err?.message || "Signup failed. Please try again.")
+    } finally {
+      setLoading(false)
     }
+  }
 
   return (
     <FadeIn>
@@ -46,27 +55,42 @@ export default function InfluencerSignupPage() {
         </p>
       </div>
 
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="email" className="text-gray-300">Email</Label>
-          <Input 
+          <Input
             id="email"
-            placeholder="name@example.com" 
-            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-white/20" 
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="password" blindnessClassName="text-gray-300">Password</Label>
-          <Input 
-            id="password"
-            type="password" 
-            className="bg-white/5 border-white/10 text-white focus-visible:ring-white/20" 
+            name="email"
+            type="email"
+            required
+            placeholder="name@example.com"
+            className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-white/20"
           />
         </div>
 
-        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white mt-2">
-          Signup
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-gray-300">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            className="bg-white/5 border-white/10 text-white focus-visible:ring-white/20"
+          />
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white mt-2 disabled:opacity-60"
+        >
+          {loading ? "Creating account..." : "Sign up"}
         </Button>
       </form>
 
@@ -81,14 +105,14 @@ export default function InfluencerSignupPage() {
         </div>
 
         <div className="ml-5">
-        <GoogleAuthButton role="INFLUENCER" />
+          <GoogleAuthButton role="INFLUENCER" />
         </div>
       </div>
     </Card>
     <p className="mt-6 text-center text-sm text-gray-400">
       Already have an account?{" "}
-      <Link 
-        href="/login" 
+      <Link
+        href="/login"
         className="text-white font-medium hover:underline underline-offset-4"
       >
         Log in

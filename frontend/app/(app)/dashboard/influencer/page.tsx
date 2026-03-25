@@ -38,7 +38,7 @@ export default function InfluencerStudio() {
             description="Understand what works, what doesn't, and how to grow faster with AI insights."
             action="Analyze Profile"
             accent="cyan"
-            href="/dashboard/analytics/influencer"
+            href="/dashboard/influencer/growth-analyzer"
           />
 
           <AICard

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { getBrandDeals } from "@/lib/ai"
 
@@ -23,23 +23,23 @@ type DealsResponse = {
 
 export default function BrandDealsPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [deals, setDeals] = useState<DealsResponse | null>(null)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    async function fetchDeals() {
-      try {
-        const data = await getBrandDeals()
-        setDeals(data)
-      } catch (err: any) {
-        setError(err?.message || "Failed to load brand deals")
-      } finally {
-        setLoading(false)
-      }
+  async function fetchDeals() {
+    setLoading(true)
+    setError("")
+    setDeals(null)
+    try {
+      const data = await getBrandDeals()
+      setDeals(data)
+    } catch (err: any) {
+      setError(err?.message || "Failed to load brand deals. Please try again.")
+    } finally {
+      setLoading(false)
     }
-    fetchDeals()
-  }, [])
+  }
 
   const fitColors: Record<string, string> = {
     High: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
@@ -72,7 +72,7 @@ export default function BrandDealsPage() {
         <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-3">
           Brand Deals
         </h1>
-        <p className="text-lg text-gray-400 mb-12">
+        <p className="text-lg text-gray-400 mb-10">
           AI-curated brand collaboration opportunities matched to your profile.
         </p>
 
@@ -91,13 +91,32 @@ export default function BrandDealsPage() {
 
         {/* Error */}
         {error && !loading && (
-          <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-xl text-center">
+          <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-xl text-center mb-8">
             <p className="text-red-300 mb-4">{error}</p>
             <button
-              onClick={() => { setError(""); setLoading(true); getBrandDeals().then(setDeals).catch((e) => setError(e?.message)).finally(() => setLoading(false)) }}
+              onClick={fetchDeals}
               className="text-sm text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
             >
               Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Initial CTA — shown before any fetch */}
+        {!loading && !deals && !error && (
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+            <p className="text-5xl">🏷️</p>
+            <div>
+              <p className="text-2xl font-semibold text-white">Find Brand Deals For You</p>
+              <p className="text-gray-400 mt-2 max-w-md mx-auto">
+                Our AI analyzes your creator profile and matches you with relevant brand collaborations in real-time.
+              </p>
+            </div>
+            <button
+              onClick={fetchDeals}
+              className="mt-4 rounded-full bg-white px-10 py-4 text-base font-semibold text-black hover:bg-gray-100 transition"
+            >
+              ✦ Find My Deals
             </button>
           </div>
         )}
@@ -107,101 +126,101 @@ export default function BrandDealsPage() {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-semibold">
-                {deals.total} Opportunity{deals.total !== 1 ? "ies" : "y"} Available
+                {deals.total} {deals.total === 1 ? "Opportunity" : "Opportunities"} Available
               </h2>
               <button
-                onClick={() => { setLoading(true); setError(""); getBrandDeals().then(setDeals).catch((e) => setError(e?.message)).finally(() => setLoading(false)) }}
+                onClick={fetchDeals}
                 className="text-sm text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
               >
                 🔄 Refresh
               </button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {deals.opportunities.map((deal) => (
-                <div
-                  key={deal.opportunity_id}
-                  className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#0E1220] to-[#080B14] p-6 transition-all duration-300 hover:border-white/20 hover:-translate-y-1"
-                >
-                  {/* Top bar */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      {deal.fit_level && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${fitColors[deal.fit_level] || fitColors["Low"]}`}>
-                          {deal.fit_level} Fit
-                        </span>
-                      )}
-                      {deal.status && (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[deal.status] || statusColors["open"]}`}>
-                          {deal.status.toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Industry & Campaign */}
-                  {deal.industry_hint && (
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Industry</span>
-                      <p className="text-lg font-semibold text-white mt-1">{deal.industry_hint}</p>
-                    </div>
-                  )}
-
-                  {deal.campaign_type && (
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Campaign Type</span>
-                      <p className="text-sm text-indigo-300 mt-1">{deal.campaign_type}</p>
-                    </div>
-                  )}
-
-                  {/* Requirements */}
-                  {deal.campaign_requirements && (
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Requirements</span>
-                      <p className="text-sm text-gray-300 mt-1">{deal.campaign_requirements}</p>
-                    </div>
-                  )}
-
-                  {/* Compensation & Timeline */}
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    {deal.compensation && (
-                      <div>
-                        <span className="text-xs text-gray-500 uppercase tracking-wide">Compensation</span>
-                        <p className="text-sm text-emerald-300 mt-1 font-medium">{deal.compensation}</p>
-                      </div>
-                    )}
-                    {deal.timeline && (
-                      <div>
-                        <span className="text-xs text-gray-500 uppercase tracking-wide">Timeline</span>
-                        <p className="text-sm text-gray-300 mt-1">{deal.timeline}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Deliverables */}
-                  {deal.deliverables && deal.deliverables.length > 0 && (
-                    <div>
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Deliverables</span>
-                      <ul className="mt-2 space-y-1">
-                        {deal.deliverables.map((d, j) => (
-                          <li key={j} className="text-sm text-gray-300 flex items-start gap-2">
-                            <span className="mt-0.5 text-indigo-400">•</span> {d}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {deals.total === 0 && (
+            {deals.total === 0 ? (
               <div className="text-center py-16">
                 <p className="text-4xl mb-4">🏷️</p>
                 <p className="text-xl text-gray-400">No brand deals available right now</p>
                 <p className="text-gray-500 text-sm mt-2">
-                  Check back later — new opportunities are added regularly.
+                  Check back later — new opportunities are added as brands join the platform.
                 </p>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                {deals.opportunities.map((deal) => (
+                  <div
+                    key={deal.opportunity_id}
+                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#0E1220] to-[#080B14] p-6 transition-all duration-300 hover:border-white/20 hover:-translate-y-1"
+                  >
+                    {/* Top bar */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        {deal.fit_level && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${fitColors[deal.fit_level] || fitColors["Low"]}`}>
+                            {deal.fit_level} Fit
+                          </span>
+                        )}
+                        {deal.status && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[deal.status] || statusColors["open"]}`}>
+                            {deal.status.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Industry & Campaign */}
+                    {deal.industry_hint && (
+                      <div className="mb-3">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Industry</span>
+                        <p className="text-lg font-semibold text-white mt-1">{deal.industry_hint}</p>
+                      </div>
+                    )}
+
+                    {deal.campaign_type && (
+                      <div className="mb-3">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Campaign Type</span>
+                        <p className="text-sm text-indigo-300 mt-1">{deal.campaign_type}</p>
+                      </div>
+                    )}
+
+                    {/* Requirements */}
+                    {deal.campaign_requirements && (
+                      <div className="mb-3">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Requirements</span>
+                        <p className="text-sm text-gray-300 mt-1">{deal.campaign_requirements}</p>
+                      </div>
+                    )}
+
+                    {/* Compensation & Timeline */}
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      {deal.compensation && (
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">Compensation</span>
+                          <p className="text-sm text-emerald-300 mt-1 font-medium">{deal.compensation}</p>
+                        </div>
+                      )}
+                      {deal.timeline && (
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">Timeline</span>
+                          <p className="text-sm text-gray-300 mt-1">{deal.timeline}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Deliverables */}
+                    {deal.deliverables && deal.deliverables.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Deliverables</span>
+                        <ul className="mt-2 space-y-1">
+                          {deal.deliverables.map((d, j) => (
+                            <li key={j} className="text-sm text-gray-300 flex items-start gap-2">
+                              <span className="mt-0.5 text-indigo-400">•</span> {d}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>

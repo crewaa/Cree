@@ -34,11 +34,10 @@ export default function BrandStudio() {
           />
 
           <AICard
-            title="Brand Profile"
-            description="Set up your brand profile to help AI find the best creators for you."
-            action="Setup Profile"
+            title="AI Influencer"
+            description="Create AI-powered virtual influencers tailored to your brand — ideal for scalable and consistent marketing campaigns."
+            badge="Coming Soon"
             accent="cyan"
-            href="/dashboard/brand-profile"
           />
 
           <AICard

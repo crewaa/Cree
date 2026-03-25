@@ -1,5 +1,6 @@
-from sqlalchemy import String, Boolean, ForeignKey, Text
+from sqlalchemy import String, Boolean, ForeignKey, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
 from typing import List, Optional
 from app.core.database import Base
 
@@ -23,6 +24,12 @@ class User(Base):
     youtube_channels: Mapped[List["YouTubeChannel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     youtube_videos: Mapped[List["YouTubeVideo"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
+    saved_creators: Mapped[List["SavedCreator"]] = relationship(
+        "SavedCreator",
+        foreign_keys="[SavedCreator.brand_id]",
+        back_populates="brand",
+        cascade="all, delete-orphan"
+    )
 
 class CreatorProfile(Base):
     __tablename__ = "creator_profiles"
@@ -72,3 +79,19 @@ class BrandProfile(Base):
     is_completed: Mapped[bool] = mapped_column(Boolean, default=True)
 
     user: Mapped["User"] = relationship(back_populates="brand_profile")
+
+
+class SavedCreator(Base):
+    __tablename__ = "saved_creators"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    brand_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    
+    fit_level: Mapped[str] = mapped_column(String)  # High | Medium | Low
+    score_reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON string list
+    
+    saved_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    brand: Mapped["User"] = relationship("User", foreign_keys=[brand_id], back_populates="saved_creators")
+    creator: Mapped["User"] = relationship("User", foreign_keys=[creator_id])

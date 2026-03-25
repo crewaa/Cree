@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.common.dependencies import get_db, get_current_user
-from app.modules.users.models import User, CreatorProfile, BrandProfile
+from app.modules.users.models import User, CreatorProfile, BrandProfile, SavedCreator
 from app.modules.instagram.models.instagram import InstagramProfile, InstagramPost
 from app.modules.youtube.models import YouTubeChannel, YouTubeVideo
 from app.modules.ai.schemas import (
@@ -19,8 +19,9 @@ from app.modules.ai.schemas import (
     RankedCreator,
     BrandDealsResponse,
     BrandDealOpportunity,
+    CreatorSummaryResponse,
 )
-from app.modules.ai.ai_service import BrandCreatorRankingEngine, AnonymousOpportunityEngine
+from app.modules.ai.ai_service import BrandCreatorRankingEngine, AnonymousOpportunityEngine, CreatorAIEngine
 
 router = APIRouter(prefix="/ai", tags=["AI Engine"])
 
@@ -154,6 +155,50 @@ def _build_brand_payload(brand: BrandProfile) -> dict:
 
 
 # =============================================================================
+# Creator Summary - Influencer gets AI-generated profile analysis
+# =============================================================================
+
+@router.post("/creator-summary", response_model=CreatorSummaryResponse)
+async def get_creator_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Creator requests an AI-generated summary and analysis of their profile."""
+    if current_user.role != "INFLUENCER":
+        raise HTTPException(403, "Only creators can access the growth analyzer")
+
+    # Get creator profile
+    creator_result = await db.execute(
+        select(CreatorProfile).where(CreatorProfile.user_id == current_user.id)
+    )
+    creator = creator_result.scalar()
+
+    if not creator:
+        raise HTTPException(404, "Please complete your creator profile first")
+
+    # Build creator payload with real platform data
+    creator_payload = await _build_creator_payload(current_user.id, creator, db)
+
+    # Run AI engine
+    try:
+        engine = CreatorAIEngine()
+        result = engine.generate_creator_profile(creator_payload)
+    except RuntimeError as e:
+        raise HTTPException(429, "AI Engine rate-limited. Please wait a minute and try again.")
+    except Exception as e:
+        raise HTTPException(500, f"AI Engine error: {str(e)}")
+
+    return CreatorSummaryResponse(
+        creator_id=result.get("creator_id"),
+        summary=result.get("summary"),
+        strengths=result.get("strengths", []),
+        improvement_areas=result.get("improvement_areas", []),
+        best_brand_categories=result.get("best_brand_categories", []),
+        recommended_content_formats=result.get("recommended_content_formats", []),
+    )
+
+
+# =============================================================================
 # Discover Creators - Brand finds matching influencers
 # =============================================================================
 
@@ -218,15 +263,46 @@ async def discover_creators(
 
     # Parse result
     ranked = []
+    
+    # Pre-fetch existing saved creators for this brand to upsert instead of duplicate
+    saved_creators_result = await db.execute(
+        select(SavedCreator).where(SavedCreator.brand_id == current_user.id)
+    )
+    existing_saved = {sc.creator_id: sc for sc in saved_creators_result.scalars().all()}
+    
     for c in result.get("ranked_creators", []):
+        c_id_str = c.get("creator_id", "unknown")
+        if c_id_str == "unknown":
+            continue
+            
+        c_id_int = int(c_id_str)
+        fit_level = c.get("fit_level", "Low")
+        reasoning = c.get("score_reasoning", [])
+        
         ranked.append(RankedCreator(
-            creator_id=c.get("creator_id", "unknown"),
+            creator_id=c_id_str,
             creator_name=c.get("creator_name"),
-            fit_level=c.get("fit_level", "Low"),
-            score_reasoning=c.get("score_reasoning", []),
+            fit_level=fit_level,
+            score_reasoning=reasoning,
             risks=c.get("risks", []),
             recommended_campaign_type=c.get("recommended_campaign_type"),
         ))
+        
+        # Save or update the creator connection in the DB
+        if c_id_int in existing_saved:
+            existing = existing_saved[c_id_int]
+            existing.fit_level = fit_level
+            existing.score_reasoning = json.dumps(reasoning)
+        else:
+            new_saved = SavedCreator(
+                brand_id=current_user.id,
+                creator_id=c_id_int,
+                fit_level=fit_level,
+                score_reasoning=json.dumps(reasoning)
+            )
+            db.add(new_saved)
+            
+    await db.commit()
 
     return DiscoverCreatorsResponse(
         ranked_creators=ranked,

@@ -17,7 +17,17 @@ export async function getBrandDeals() {
   return res.data
 }
 
+export async function getCachedBrandDeals() {
+  const res = await api.get("/ai/brand-deals")
+  return res.data
+}
+
 export async function getCreatorSummary() {
   const res = await api.post("/ai/creator-summary")
+  return res.data
+}
+
+export async function getCachedCreatorSummary() {
+  const res = await api.get("/ai/creator-summary")
   return res.data
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/user";
-import { getCreatorSummary } from "@/lib/ai";
+import { getCreatorSummary, getCachedCreatorSummary } from "@/lib/ai";
 import { Button } from "@/components/ui/button";
 
 interface CreatorSummary {
@@ -34,10 +34,23 @@ export default function GrowthAnalyzerPage() {
     loadUser();
   }, [router]);
 
+  useEffect(() => {
+    async function initSummary() {
+      try {
+        const cached = await getCachedCreatorSummary();
+        if (cached) {
+          setSummary(cached);
+        }
+      } catch (err) {
+        // Safe to ignore cache miss
+      }
+    }
+    initSummary();
+  }, []);
+
   const handleAnalyze = async () => {
     setLoading(true);
     setError(null);
-    setSummary(null);
     try {
       const data = await getCreatorSummary();
       setSummary(data);

@@ -6,7 +6,7 @@ import asyncio
 import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.common.dependencies import get_db, get_current_user
@@ -158,12 +158,36 @@ def _build_brand_payload(brand: BrandProfile) -> dict:
 # Creator Summary - Influencer gets AI-generated profile analysis
 # =============================================================================
 
-@router.post("/creator-summary", response_model=CreatorSummaryResponse)
-async def get_creator_summary(
+@router.get("/creator-summary", response_model=CreatorSummaryResponse | None)
+async def get_cached_creator_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Creator requests an AI-generated summary and analysis of their profile."""
+    """Retrieve the previously generated AI summary for the creator."""
+    if current_user.role != "INFLUENCER":
+        raise HTTPException(403, "Only creators can access the growth analyzer")
+
+    creator_result = await db.execute(
+        select(CreatorProfile).where(CreatorProfile.user_id == current_user.id)
+    )
+    creator = creator_result.scalar()
+    
+    if not creator or not creator.ai_summary:
+        return None
+        
+    try:
+        data = json.loads(creator.ai_summary)
+        return CreatorSummaryResponse(**data)
+    except:
+        return None
+
+
+@router.post("/creator-summary", response_model=CreatorSummaryResponse)
+async def generate_creator_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Creator forces a new AI-generated summary and analysis of their profile."""
     if current_user.role != "INFLUENCER":
         raise HTTPException(403, "Only creators can access the growth analyzer")
 
@@ -188,7 +212,7 @@ async def get_creator_summary(
     except Exception as e:
         raise HTTPException(500, f"AI Engine error: {str(e)}")
 
-    return CreatorSummaryResponse(
+    response = CreatorSummaryResponse(
         creator_id=result.get("creator_id"),
         summary=result.get("summary"),
         strengths=result.get("strengths", []),
@@ -196,6 +220,13 @@ async def get_creator_summary(
         best_brand_categories=result.get("best_brand_categories", []),
         recommended_content_formats=result.get("recommended_content_formats", []),
     )
+    
+    # Cache the result to prevent wiping on refresh
+    creator.ai_summary = response.model_dump_json()
+    creator.summary_generated_at = func.now()
+    await db.commit()
+
+    return response
 
 
 # =============================================================================
@@ -314,12 +345,37 @@ async def discover_creators(
 # Brand Deals - Influencer sees anonymous brand opportunities
 # =============================================================================
 
-@router.post("/brand-deals", response_model=BrandDealsResponse)
-async def get_brand_deals(
+@router.get("/brand-deals", response_model=BrandDealsResponse | None)
+async def get_cached_brand_deals(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Influencer requests available brand deals. AI generates anonymous opportunities."""
+    """Retrieve previously generated anonymous opportunities."""
+    if current_user.role != "INFLUENCER":
+        raise HTTPException(403, "Only influencers can view brand deals")
+
+    creator_result = await db.execute(
+        select(CreatorProfile).where(CreatorProfile.user_id == current_user.id)
+    )
+    creator = creator_result.scalar()
+    
+    if not creator or not creator.cached_brand_deals:
+        return None
+        
+    try:
+        data = json.loads(creator.cached_brand_deals)
+        # Parse the JSON back into the response schema
+        opportunities = [BrandDealOpportunity(**opp) for opp in data]
+        return BrandDealsResponse(opportunities=opportunities, total=len(opportunities))
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+@router.post("/brand-deals", response_model=BrandDealsResponse)
+async def generate_brand_deals(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Influencer generates a fresh batch of anonymous opportunities via AI."""
     if current_user.role != "INFLUENCER":
         raise HTTPException(403, "Only influencers can view brand deals")
 
@@ -369,6 +425,11 @@ async def get_brand_deals(
         # Throttle: wait 2s between Gemini calls to stay under free-tier RPM
         if i < len(brands) - 1:
             await asyncio.sleep(2)
+
+    # Cache the newly generated deals so they don't wipe on refresh
+    creator.cached_brand_deals = json.dumps([opp.model_dump() for opp in opportunities])
+    creator.brand_deals_generated_at = func.now()
+    await db.commit()
 
     return BrandDealsResponse(
         opportunities=opportunities,

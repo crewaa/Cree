@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getBrandDeals } from "@/lib/ai"
+import { getBrandDeals, getCachedBrandDeals } from "@/lib/ai"
 
 type BrandDeal = {
   opportunity_id: string
@@ -23,19 +23,34 @@ type DealsResponse = {
 
 export default function BrandDealsPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [deals, setDeals] = useState<DealsResponse | null>(null)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    async function initDeals() {
+      try {
+        const cached = await getCachedBrandDeals()
+        if (cached) {
+          setDeals(cached)
+        }
+      } catch (err) {
+        // Ignore cache miss
+      } finally {
+        setLoading(false)
+      }
+    }
+    initDeals()
+  }, [])
 
   async function fetchDeals() {
     setLoading(true)
     setError("")
-    setDeals(null)
     try {
       const data = await getBrandDeals()
       setDeals(data)
     } catch (err: any) {
-      setError(err?.message || "Failed to load brand deals. Please try again.")
+      setError(err?.response?.data?.detail || err?.message || "Failed to load brand deals. Please try again.")
     } finally {
       setLoading(false)
     }

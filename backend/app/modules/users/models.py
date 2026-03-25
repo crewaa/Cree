@@ -53,6 +53,13 @@ class CreatorProfile(Base):
 
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Persistence for AI Tools
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    summary_generated_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    
+    cached_brand_deals: Mapped[str | None] = mapped_column(Text, nullable=True)
+    brand_deals_generated_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     is_completed: Mapped[bool] = mapped_column(Boolean, default=True)
 
     user: Mapped["User"] = relationship(back_populates="creator_profile")

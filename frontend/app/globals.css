@@ -138,5 +138,60 @@
   }
 }
 
+@keyframes landing-shimmer-sweep {
+  0% {
+    transform: translate3d(-10%, 0, 0) skewX(-12deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.32;
+  }
+  50% {
+    opacity: 0.18;
+  }
+  100% {
+    transform: translate3d(220%, 0, 0) skewX(-12deg);
+    opacity: 0;
+  }
+}
 
+@keyframes landing-aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12px, -16px, 0) scale(1.04);
+  }
+}
+
+@keyframes landing-aurora-drift-reverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-14px, 10px, 0) scale(0.97);
+  }
+}
+
+.landing-shimmer-sweep {
+  animation: landing-shimmer-sweep 14s linear infinite;
+}
+
+.landing-aurora-drift {
+  animation: landing-aurora-drift 16s ease-in-out infinite;
+}
+
+.landing-aurora-drift-reverse {
+  animation: landing-aurora-drift-reverse 18s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-shimmer-sweep,
+  .landing-aurora-drift,
+  .landing-aurora-drift-reverse {
+    animation: none;
+  }
+}
 

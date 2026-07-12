@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card"
 import { FadeIn } from "../motion/fade-in"
+import ShimmerField from "./shimmer-field"
 
 const features = [
   {
@@ -36,28 +37,29 @@ const features = [
 
 export function LandingPageFeaturesSection() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-24">
-      <h2 className="text-3xl font-semibold text-center text-white">
-        Everything you need to collaborate at scale
-      </h2>
+    <section className="px-6 py-24">
+      <ShimmerField className="mx-auto max-w-7xl px-8 py-14 sm:px-10">
+        <h2 className="text-center text-3xl font-semibold text-white">
+          Everything you need to collaborate at scale
+        </h2>
 
-      <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((feature, index) => (
-        <FadeIn key={feature.title} delay={index * 0.05}>
-          <Card
-            key={feature.title}
-            className="bg-[#111318] border border-white/10 p-6 hover:border-white/20 transition"
-          >
-            <h3 className="text-lg font-medium text-white">
-              {feature.title}
-            </h3>
-            <p className="mt-2 text-sm text-gray-400">
-              {feature.description}
-            </p>
-          </Card>
-          </FadeIn>
-        ))}
-      </div>
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, index) => (
+            <FadeIn key={feature.title} delay={index * 0.05}>
+              <Card
+                className="bg-white/[0.035] border border-white/8 p-6 backdrop-blur-xs transition hover:border-cyan-200/15 hover:bg-white/[0.05]"
+              >
+                <h3 className="text-lg font-medium text-white">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  {feature.description}
+                </p>
+              </Card>
+            </FadeIn>
+          ))}
+        </div>
+      </ShimmerField>
     </section>
   )
 }

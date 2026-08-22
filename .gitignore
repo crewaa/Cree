@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Environment / secrets — never commit these
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+
+# Local databases & build artefacts
+*.db
+ci.db
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local walkthrough screenshots — not part of the app
+.walkthrough-shots/

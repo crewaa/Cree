@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getAdminStats, PlatformStats } from "@/lib/admin"
-import { Users, Palette, Building2, ShieldCheck, ArrowRight } from "lucide-react"
+import { Users, Palette, Building2, ShieldCheck, ArrowRight, UserPlus } from "lucide-react"
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -54,11 +54,18 @@ export default function AdminDashboard() {
           gradient: "from-emerald-500 to-emerald-700",
           glow: "bg-emerald-500/20",
         },
+        {
+          label: "New (Last 7 Days)",
+          value: stats.new_users_last_7_days,
+          icon: UserPlus,
+          gradient: "from-fuchsia-500 to-fuchsia-700",
+          glow: "bg-fuchsia-500/20",
+        },
       ]
     : []
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-indigo-500/10 blur-[160px]" />
@@ -83,8 +90,8 @@ export default function AdminDashboard() {
 
         {/* Stats Grid */}
         {loading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+            {[...Array(5)].map((_, i) => (
               <div
                 key={i}
                 className="h-[140px] rounded-2xl border border-white/10 bg-white/5 animate-pulse"
@@ -92,7 +99,7 @@ export default function AdminDashboard() {
             ))}
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
             {statCards.map((card) => (
               <div
                 key={card.label}

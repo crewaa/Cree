@@ -1,9 +1,14 @@
 "use client"
-import { AICard } from "../../../../components/dashboard/ai-studio-layout"
+import { Sparkles } from "lucide-react"
+import { AICard } from "@/components/dashboard/ai-studio-layout"
+import { useHasBrandProfile } from "@/lib/profile-status"
 
 export default function BrandStudio() {
+  const { hasProfile, loading } = useHasBrandProfile()
+  const locked = !loading && hasProfile === false
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
 
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
@@ -24,6 +29,17 @@ export default function BrandStudio() {
           Smarter collaborations powered by AI.
         </p>
 
+        {locked && (
+          <div className="mt-8 flex max-w-xl items-start gap-3 rounded-xl border border-indigo-400/20 bg-indigo-400/[0.07] px-5 py-4 text-left">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-300" aria-hidden="true" />
+            <p className="text-sm text-indigo-100/90">
+              <span className="font-medium">One step to go.</span> Add your brand
+              profile — industry, budget and goals — so we can match you to the right
+              creators.
+            </p>
+          </div>
+        )}
+
         <div className="mt-16 grid max-w-6xl gap-10 md:grid-cols-3">
           <AICard
             title="Discover Creators"
@@ -31,21 +47,34 @@ export default function BrandStudio() {
             action="Discover"
             accent="indigo"
             href="/dashboard/brand/discover"
+            locked={locked}
+            lockedReason="Tell us about your brand so we can match creators"
+            lockedHref="/dashboard/brand-profile"
+            lockedAction="Complete brand profile"
           />
 
           <AICard
-            title="AI Influencer"
-            description="Create AI-powered virtual influencers tailored to your brand — ideal for scalable and consistent marketing campaigns."
-            badge="Coming Soon"
+            title="Interested Creators"
+            description="Creators who responded to your opportunities, with their contact details."
+            action="View Responses"
             accent="cyan"
+            href="/dashboard/brand/interested"
+            locked={locked}
+            lockedReason="Complete your brand profile to start receiving responses"
+            lockedHref="/dashboard/brand-profile"
+            lockedAction="Complete brand profile"
           />
 
           <AICard
-            title="AI Marketing Suite"
-            description="Run intelligent, data-driven marketing campaigns using AI from content strategy to
-            performance optimization."
-            badge="Coming Soon"
+            title="Campaigns"
+            description="State your real fee, deliverables and deadline. Creators see exactly what you offer."
+            action="Manage Campaigns"
             accent="amber"
+            href="/dashboard/brand/campaigns"
+            locked={locked}
+            lockedReason="Complete your brand profile to create campaigns"
+            lockedHref="/dashboard/brand-profile"
+            lockedAction="Complete brand profile"
           />
         </div>
       </main>

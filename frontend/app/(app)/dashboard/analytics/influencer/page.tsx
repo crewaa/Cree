@@ -2,28 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/user";
+import { useSession } from "@/lib/session";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import InstagramAnalytics from "@/components/dashboard/instagram-analytics";
 import YouTubeAnalytics from "@/components/dashboard/youtube-analytics";
+import { CurrentUser } from "@/lib/types"
+import { Instagram, Youtube } from "lucide-react";
 
 export default function Analytics() {
-  const [user, setUser] = useState<any>(null);
+  const { user } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("instagram");
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const data = await getCurrentUser();
-        setUser(data);
-      } catch {
-        router.replace("/login");
-      }
-    }
-    loadUser();
-  }, [router]);
 
   if (!user) return null;
 
@@ -47,11 +38,11 @@ export default function Analytics() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="instagram" className="flex items-center gap-2">
-            <span>📸</span>
+            <Instagram className="h-4 w-4" />
             <span>Instagram</span>
           </TabsTrigger>
           <TabsTrigger value="youtube" className="flex items-center gap-2">
-            <span>▶️</span>
+            <Youtube className="h-4 w-4" />
             <span>YouTube</span>
           </TabsTrigger>
         </TabsList>

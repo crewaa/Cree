@@ -9,15 +9,18 @@ import {
   AdminUserListItem,
   PaginatedUsers,
 } from "@/lib/admin"
+import { errorMessage } from "@/lib/types"
 import {
-  Users, Search, Plus, Trash2, Eye, ChevronLeft, ChevronRight,
+  Users, Search, Plus, Trash2, Eye, ChevronLeft, ChevronRight, Check,
   X, Loader2, ShieldCheck,
 } from "lucide-react"
+import { useToast } from "@/components/ui/toast"
 
 type RoleFilter = "" | "INFLUENCER" | "BRAND"
 
 export default function AdminUsersPage() {
   const router = useRouter()
+  const toast = useToast()
   const [data, setData] = useState<PaginatedUsers | null>(null)
   const [loading, setLoading] = useState(true)
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("")
@@ -36,8 +39,15 @@ export default function AdminUsersPage() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState("")
 
+  /**
+   * Reload the list. Kept for the callers that need it directly — deleting or
+   * creating a user re-reads the page they are looking at.
+   *
+   * It no longer flips `loading` itself. Doing so made every caller's first act
+   * a synchronous state write, which inside an effect costs an extra render
+   * pass; the spinner is now owned by whoever triggers the change.
+   */
   const fetchUsers = useCallback(async () => {
-    setLoading(true)
     try {
       const res = await getAdminUsers({
         role: roleFilter || undefined,
@@ -53,12 +63,35 @@ export default function AdminUsersPage() {
     }
   }, [roleFilter, search, page])
 
+  // `loading` starts true, and the handlers below set it before changing a
+  // filter, so the effect never has to write state synchronously.
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const res = await getAdminUsers({
+          role: roleFilter || undefined,
+          search: search || undefined,
+          page,
+          page_size: pageSize,
+        })
+        if (!cancelled) setData(res)
+      } catch (err) {
+        console.error("Failed to fetch users:", err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [roleFilter, search, page])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
+    setLoading(true)
     setPage(1)
     setSearch(searchInput)
   }
@@ -71,7 +104,8 @@ export default function AdminUsersPage() {
       setDeleteTarget(null)
       fetchUsers()
     } catch (err) {
-      console.error("Delete failed:", err)
+      // Previously console-only: the modal simply stopped with no explanation.
+      toast.error(errorMessage(err, "Could not delete this user. Please try again."))
     } finally {
       setDeleting(false)
     }
@@ -86,8 +120,8 @@ export default function AdminUsersPage() {
       setShowCreate(false)
       setCreateForm({ email: "", password: "", role: "INFLUENCER" })
       fetchUsers()
-    } catch (err: any) {
-      setCreateError(err.message || "Failed to create user")
+    } catch (err) {
+      setCreateError(errorMessage(err, "Failed to create user"))
     } finally {
       setCreating(false)
     }
@@ -108,7 +142,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-indigo-500/8 blur-[160px]" />
@@ -150,7 +184,7 @@ export default function AdminUsersPage() {
             {roleTabs.map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => { setRoleFilter(tab.value); setPage(1); }}
+                onClick={() => { setLoading(true); setRoleFilter(tab.value); setPage(1); }}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition cursor-pointer ${
                   roleFilter === tab.value
                     ? "bg-white/15 text-white"
@@ -183,7 +217,7 @@ export default function AdminUsersPage() {
             {search && (
               <button
                 type="button"
-                onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}
+                onClick={() => { setLoading(true); setSearch(""); setSearchInput(""); setPage(1); }}
                 className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/10 transition cursor-pointer"
               >
                 <X className="h-4 w-4" />
@@ -213,6 +247,9 @@ export default function AdminUsersPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    Joined
+                  </th>
                   <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
@@ -222,7 +259,7 @@ export default function AdminUsersPage() {
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="border-b border-white/5">
-                      {[...Array(6)].map((_, j) => (
+                      {[...Array(7)].map((_, j) => (
                         <td key={j} className="px-6 py-4">
                           <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
                         </td>
@@ -231,7 +268,7 @@ export default function AdminUsersPage() {
                   ))
                 ) : data?.items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-16 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-16 text-center text-gray-500">
                       No users found
                     </td>
                   </tr>
@@ -256,7 +293,7 @@ export default function AdminUsersPage() {
                         {user.role === "ADMIN" ? (
                           <span className="text-gray-500">—</span>
                         ) : user.has_profile ? (
-                          <span className="text-emerald-400">✓ Completed</span>
+                          <span className="flex items-center gap-1 text-emerald-400"><Check className="h-3.5 w-3.5" /> Completed</span>
                         ) : (
                           <span className="text-amber-400">Incomplete</span>
                         )}
@@ -273,6 +310,11 @@ export default function AdminUsersPage() {
                             Inactive
                           </span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-400">
+                        {new Date(user.created_at).toLocaleDateString(undefined, {
+                          year: "numeric", month: "short", day: "numeric",
+                        })}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -309,14 +351,14 @@ export default function AdminUsersPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
+                  onClick={() => { setLoading(true); setPage(Math.max(1, page - 1)) }}
                   disabled={page <= 1}
                   className="rounded-lg border border-white/10 p-2 hover:bg-white/10 transition disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  onClick={() => { setLoading(true); setPage(Math.min(totalPages, page + 1)) }}
                   disabled={page >= totalPages}
                   className="rounded-lg border border-white/10 p-2 hover:bg-white/10 transition disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
                 >
@@ -351,7 +393,7 @@ export default function AdminUsersPage() {
               </p>
             </div>
             <p className="text-xs text-red-400/80 mb-6">
-              ⚠️ All associated data (profiles, Instagram, YouTube, saved creators) will be permanently deleted.
+              All associated data (profiles, Instagram, YouTube, saved creators) will be permanently deleted.
             </p>
             <div className="flex gap-3 justify-end">
               <button

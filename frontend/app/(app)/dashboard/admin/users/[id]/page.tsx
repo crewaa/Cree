@@ -6,10 +6,14 @@ import { getAdminUserDetail, deleteAdminUser, AdminUserDetail } from "@/lib/admi
 import {
   ArrowLeft, Trash2, Loader2, Mail, ShieldCheck,
   MapPin, Tag, Instagram, Youtube, Globe, Target, DollarSign,
+  Building2, UserRound, Calendar,
 } from "lucide-react"
+import { useToast } from "@/components/ui/toast"
+import { errorMessage } from "@/lib/types"
 
 export default function AdminUserDetailPage() {
   const router = useRouter()
+  const toast = useToast()
   const params = useParams()
   const userId = Number(params.id)
 
@@ -38,7 +42,8 @@ export default function AdminUserDetailPage() {
       await deleteAdminUser(userId)
       router.push("/dashboard/admin/users")
     } catch (err) {
-      console.error("Delete failed:", err)
+      // Previously console-only: the modal simply stopped with no explanation.
+      toast.error(errorMessage(err, "Could not delete this user. Please try again."))
     } finally {
       setDeleting(false)
     }
@@ -46,7 +51,7 @@ export default function AdminUserDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#06070C]">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
       </div>
     )
@@ -54,7 +59,7 @@ export default function AdminUserDetailPage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#06070C] text-white gap-4">
+      <div className="flex min-h-screen flex-col items-center justify-center  gap-4">
         <p className="text-gray-400">User not found</p>
         <button
           onClick={() => router.push("/dashboard/admin/users")}
@@ -75,7 +80,7 @@ export default function AdminUserDetailPage() {
         : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-indigo-500/8 blur-[160px]" />
@@ -141,6 +146,12 @@ export default function AdminUserDetailPage() {
                   <ShieldCheck className="h-4 w-4" />
                   User ID: #{user.id}
                 </div>
+                <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
+                  <Calendar className="h-4 w-4" />
+                  Joined {new Date(user.created_at).toLocaleDateString(undefined, {
+                    year: "numeric", month: "long", day: "numeric",
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -151,7 +162,7 @@ export default function AdminUserDetailPage() {
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0E1220] to-black overflow-hidden">
             <div className="border-b border-white/10 px-8 py-5">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <span className="text-cyan-400">👤</span> Creator Profile
+                <UserRound className="h-4 w-4 text-cyan-400" /> Creator Profile
                 {user.creator_profile_completed ? (
                   <span className="ml-2 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs text-emerald-400">
                     Completed
@@ -162,6 +173,13 @@ export default function AdminUserDetailPage() {
                   </span>
                 )}
               </h2>
+              {/* The badge alone used to be the whole story, and it always said
+                  "Completed". Naming what is missing is what makes it useful. */}
+              {!user.creator_profile_completed && !!user.creator_profile_missing?.length && (
+                <p className="mt-2 text-sm text-amber-300/80">
+                  Missing: {user.creator_profile_missing.join(", ")}
+                </p>
+              )}
             </div>
 
             {user.creator_full_name ? (
@@ -191,7 +209,7 @@ export default function AdminUserDetailPage() {
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0E1220] to-black overflow-hidden">
             <div className="border-b border-white/10 px-8 py-5">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <span className="text-amber-400">🏢</span> Brand Profile
+                <Building2 className="h-4 w-4 text-amber-400" /> Brand Profile
                 {user.brand_profile_completed ? (
                   <span className="ml-2 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs text-emerald-400">
                     Completed
@@ -202,6 +220,11 @@ export default function AdminUserDetailPage() {
                   </span>
                 )}
               </h2>
+              {!user.brand_profile_completed && !!user.brand_profile_missing?.length && (
+                <p className="mt-2 text-sm text-amber-300/80">
+                  Missing: {user.brand_profile_missing.join(", ")}
+                </p>
+              )}
             </div>
 
             {user.brand_name ? (
@@ -246,7 +269,7 @@ export default function AdminUserDetailPage() {
               This will permanently delete <span className="text-white font-medium">{user.email}</span> and all associated data.
             </p>
             <p className="text-xs text-red-400/80 mb-6">
-              ⚠️ All profiles, Instagram data, YouTube data, and saved creators will be permanently destroyed.
+              All profiles, Instagram data, YouTube data, and saved creators will be permanently destroyed.
             </p>
             <div className="flex gap-3 justify-end">
               <button

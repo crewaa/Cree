@@ -1,4 +1,6 @@
 from typing import Dict, Any
+
+from app.core.logging import logger
 from app.modules.instagram.services.apify_client import scrape_instagram_creator
 
 POST_LIMIT = 15
@@ -18,9 +20,9 @@ async def scrape_instagram(username: str) -> Dict[str, Any]:
         Exception: If scraping fails or profile not found
     """
     try:
-        print(f"📡 Calling Apify API for @{username}...")
-        raw_data = scrape_instagram_creator(username)
-        print(f"✅ Apify returned data for @{username}")
+        logger.info("Calling Apify for Instagram @{}", username)
+        raw_data = await scrape_instagram_creator(username)
+        logger.info("Apify returned data for @{}", username)
         
         # Extract relevant fields from the Apify response
         # Apify field names: followersCount, followsCount, postsCount, verified, likesCount, etc.
@@ -52,7 +54,7 @@ async def scrape_instagram(username: str) -> Dict[str, Any]:
                         "posted_at": post.get("timestamp") or post.get("date"),
                     })
                 except (KeyError, ValueError, TypeError) as e:
-                    print(f"⚠️ Error parsing post: {e}")
+                    logger.warning("Error parsing Instagram post: {}", e)
                     continue
         
         return {

@@ -2,6 +2,13 @@ import { ResponsiveContainer } from "recharts"
 import { LineChart, XAxis, YAxis, Tooltip, Line } from "recharts"
 
 
+/**
+ * Fields this chart reads. Callers pass richer objects (InstagramPost,
+ * YouTubeVideo); TypeScript allows the extra properties because these are
+ * typed values rather than object literals. There is deliberately no
+ * `[key: string]` index signature — it previously forced every caller to
+ * carry one, which is why these props were typed `any`.
+ */
 interface ChartData {
   id?: number
   likes?: number
@@ -9,7 +16,6 @@ interface ChartData {
   views?: number | null
   published_at?: string
   posted_at?: string
-  [key: string]: any
 }
 
 function LineChartComponent({
@@ -37,7 +43,11 @@ function LineChartComponent({
         />
         <YAxis />
         <Tooltip
+          // recharts types this label as ReactNode, so it is narrowed before
+          // being handed to Date(). Under pnpm's resolution the looser type let
+          // this through; under npm's it does not, and the npm one is right.
           labelFormatter={(v) => {
+            if (typeof v !== "string" && typeof v !== "number") return v
             try {
               return new Date(v).toLocaleString()
             } catch {

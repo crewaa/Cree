@@ -1,0 +1,18 @@
+name: Keep backend alive
+
+# Render's free tier spins the service down after 15 minutes idle, and the
+# first request after that eats a 30-60s cold boot. Pinging /health every 10
+# minutes keeps it warm. This is a mitigation, not a fix — it does not help
+# the very first visitor of the day, and it also gives Neon's free-tier
+# compute a steady trickle of activity so it's less likely to autosuspend.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: curl -sf --max-time 20 https://crewaa.onrender.com/health

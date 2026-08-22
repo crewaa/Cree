@@ -2,12 +2,15 @@
 
 import { GoogleLogin } from "@react-oauth/google"
 import { useRouter } from "next/navigation"
-import axios from "axios"
+import { api } from "@/lib/axios"
+import { errorMessage } from "@/lib/types"
+import { useToast } from "@/components/ui/toast"
 
 type Role = "BRAND" | "INFLUENCER"
 
 export function GoogleAuthButton({ role }: { role?: Role }) {
   const router = useRouter()
+  const toast = useToast()
 
   return (
     <GoogleLogin
@@ -23,13 +26,10 @@ export function GoogleAuthButton({ role }: { role?: Role }) {
               throw new Error("Missing Google credential")
             }
 
-            const res = await axios.post(
-              `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
-              {
-                id_token: credentialResponse.credential,
-                role,
-              }
-            )
+            const res = await api.post("/auth/google", {
+              id_token: credentialResponse.credential,
+              role,
+            })
 
             const data = res.data
 
@@ -50,19 +50,12 @@ export function GoogleAuthButton({ role }: { role?: Role }) {
                 ? "/dashboard/brand"
                 : "/dashboard/influencer"
             )
-          } catch (err: any) {
+          } catch (err) {
             console.error("Google auth failed:", err)
-
-            const message =
-              err?.response?.data?.detail ||
-              err?.response?.data?.message ||
-              err?.message ||
-              "Google authentication failed"
-
-            alert(message)
+            toast.error(errorMessage(err, "Google authentication failed"))
           }
         }}
-        onError={() => alert("Google authentication failed")}
+        onError={() => toast.error("Google authentication failed")}
       />
         )
       }

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 import { FaInstagram, FaLinkedinIn } from "react-icons/fa6"
+import { Bug, Handshake, Lightbulb, Mail, Megaphone, ShieldCheck } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Contact — Crewaa",
@@ -18,13 +19,13 @@ export default function ContactPage() {
         </Link>
 
         <h1 className="text-4xl font-bold tracking-tight mb-2">Contact Us</h1>
-        <p className="text-sm text-gray-500 mb-12">We're happy to hear from you.</p>
+        <p className="text-sm text-gray-500 mb-12">We&apos;re happy to hear from you.</p>
 
         <div className="space-y-10 text-gray-300 leading-relaxed">
 
           {/* Email card */}
           <section className="bg-white/5 border border-white/10 rounded-2xl p-8">
-            <h2 className="text-xl font-semibold text-white mb-2">📬 Email</h2>
+            <h2 className="mb-2 flex items-center gap-2 text-xl font-semibold text-white"><Mail className="h-5 w-5" /> Email</h2>
             <p className="text-gray-400 mb-4">
               For any questions, feedback, partnership inquiries, or support — just drop us an email.
               We try to respond within 1–2 business days.
@@ -42,14 +43,14 @@ export default function ContactPage() {
             <h2 className="text-xl font-semibold text-white mb-4">When to reach out</h2>
             <ul className="space-y-3">
               {[
-                { emoji: "🤝", label: "Partnership & collaboration opportunities" },
-                { emoji: "🐛", label: "Bug reports or technical issues" },
-                { emoji: "💡", label: "Feature requests or product feedback" },
-                { emoji: "🔐", label: "Account or privacy-related concerns" },
-                { emoji: "📣", label: "Press, media, or investor inquiries" },
-              ].map(({ emoji, label }) => (
+                { Icon: Handshake, label: "Partnership & collaboration opportunities" },
+                { Icon: Bug, label: "Bug reports or technical issues" },
+                { Icon: Lightbulb, label: "Feature requests or product feedback" },
+                { Icon: ShieldCheck, label: "Account or privacy-related concerns" },
+                { Icon: Megaphone, label: "Press, media, or investor inquiries" },
+              ].map(({ Icon, label }) => (
                 <li key={label} className="flex items-start gap-3 text-gray-300">
-                  <span className="text-lg">{emoji}</span>
+                  <Icon className="h-4 w-4 shrink-0 text-cyan-300/80" aria-hidden="true" />
                   <span>{label}</span>
                 </li>
               ))}

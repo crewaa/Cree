@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/user";
+import { useSession } from "@/lib/session";
 import { getCreatorSummary, getCachedCreatorSummary } from "@/lib/ai";
 import { Button } from "@/components/ui/button";
+import { CurrentUser } from "@/lib/types"
+import { errorMessage } from "@/lib/types"
+import { Clapperboard, ClipboardList, Clock, RotateCw, Sparkles, Tag, Target, TrendingUp, type LucideIcon } from "lucide-react";
 
 interface CreatorSummary {
+  generated_at?: string | null;
+  /** True once the analysis predates the creator's current numbers. */
+  is_stale?: boolean;
   creator_id?: string;
   summary?: string;
   strengths?: string[];
@@ -17,22 +23,12 @@ interface CreatorSummary {
 
 export default function GrowthAnalyzerPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  // Read from the shared session instead of re-fetching /users/me per page.
+  const { user } = useSession();
   const [summary, setSummary] = useState<CreatorSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const data = await getCurrentUser();
-        setUser(data);
-      } catch {
-        router.replace("/login");
-      }
-    }
-    loadUser();
-  }, [router]);
 
   useEffect(() => {
     async function initSummary() {
@@ -54,12 +50,8 @@ export default function GrowthAnalyzerPage() {
     try {
       const data = await getCreatorSummary();
       setSummary(data);
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Failed to generate summary. Please try again.";
-      setError(msg);
+    } catch (err) {
+      setError(errorMessage(err, "Failed to generate summary. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -68,7 +60,7 @@ export default function GrowthAnalyzerPage() {
   if (!user) return null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-[140px] animate-[floatSlow_18s_ease-in-out_infinite]" />
@@ -114,7 +106,7 @@ export default function GrowthAnalyzerPage() {
                 Analyzing your profile...
               </span>
             ) : (
-              "✦ Analyze My Profile"
+              (<span className="flex items-center gap-2"><Sparkles className="h-5 w-5" /> Analyze My Profile</span>)
             )}
           </button>
         )}
@@ -129,10 +121,20 @@ export default function GrowthAnalyzerPage() {
         {/* Results */}
         {summary && (
           <div className="mt-10 w-full max-w-4xl space-y-6 animate-[fadeIn_0.6s_ease-in]">
+            {summary.is_stale && (
+              <p className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                This analysis is from{" "}
+                {summary.generated_at
+                  ? new Date(summary.generated_at).toLocaleDateString()
+                  : "a while ago"}{" "}
+                and may not reflect your current numbers. Re-analyse for a fresh view.
+              </p>
+            )}
             {/* Summary Card */}
             {summary.summary && (
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0E1220] to-black p-8">
-                <h2 className="text-xl font-semibold mb-3 text-cyan-400">📋 Profile Summary</h2>
+                <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold text-cyan-400"><ClipboardList className="h-5 w-5" /> Profile Summary</h2>
                 <p className="text-gray-300 leading-relaxed text-base">{summary.summary}</p>
               </div>
             )}
@@ -141,7 +143,7 @@ export default function GrowthAnalyzerPage() {
               {/* Strengths */}
               {summary.strengths && summary.strengths.length > 0 && (
                 <SectionCard
-                  title="💪 Strengths"
+                  title="Strengths" Icon={TrendingUp}
                   items={summary.strengths}
                   accentClass="text-green-400"
                   dotClass="bg-green-400"
@@ -151,7 +153,7 @@ export default function GrowthAnalyzerPage() {
               {/* Improvement Areas */}
               {summary.improvement_areas && summary.improvement_areas.length > 0 && (
                 <SectionCard
-                  title="🎯 Areas to Improve"
+                  title="Areas to Improve" Icon={Target}
                   items={summary.improvement_areas}
                   accentClass="text-amber-400"
                   dotClass="bg-amber-400"
@@ -161,7 +163,7 @@ export default function GrowthAnalyzerPage() {
               {/* Best Brand Categories */}
               {summary.best_brand_categories && summary.best_brand_categories.length > 0 && (
                 <SectionCard
-                  title="🏷️ Best Brand Categories"
+                  title="Best Brand Categories" Icon={Tag}
                   items={summary.best_brand_categories}
                   accentClass="text-indigo-400"
                   dotClass="bg-indigo-400"
@@ -171,7 +173,7 @@ export default function GrowthAnalyzerPage() {
               {/* Recommended Content Formats */}
               {summary.recommended_content_formats && summary.recommended_content_formats.length > 0 && (
                 <SectionCard
-                  title="🎬 Recommended Content Formats"
+                  title="Recommended Content Formats" Icon={Clapperboard}
                   items={summary.recommended_content_formats}
                   accentClass="text-purple-400"
                   dotClass="bg-purple-400"
@@ -186,7 +188,7 @@ export default function GrowthAnalyzerPage() {
                 disabled={loading}
                 className="rounded-full border border-white/20 px-8 py-3 text-sm text-gray-300 hover:bg-white/10 transition disabled:opacity-50"
               >
-                {loading ? "Analyzing..." : "↺ Re-Analyze"}
+                {loading ? "Analyzing..." : (<span className="flex items-center gap-2"><RotateCw className="h-4 w-4" /> Re-Analyze</span>)}
               </button>
             </div>
           </div>
@@ -201,15 +203,19 @@ function SectionCard({
   items,
   accentClass,
   dotClass,
+  Icon,
 }: {
   title: string;
   items: string[];
   accentClass: string;
   dotClass: string;
+  Icon: LucideIcon;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0E1220] to-black p-6">
-      <h2 className={`text-lg font-semibold mb-4 ${accentClass}`}>{title}</h2>
+      <h2 className={`mb-4 flex items-center gap-2 text-lg font-semibold ${accentClass}`}>
+        <Icon className="h-5 w-5" /> {title}
+      </h2>
       <ul className="space-y-2">
         {items.map((item, i) => (
           <li key={i} className="flex items-start gap-3 text-gray-300 text-sm">

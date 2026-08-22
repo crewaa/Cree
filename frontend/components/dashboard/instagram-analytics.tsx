@@ -45,6 +45,7 @@ export default function InstagramCreatorDashboard({ userId }: { userId: number }
   const [data, setData] = useState<InstagramAnalyticsResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [scraping, setScraping] = useState(false)
+  const [scrapeError, setScrapeError] = useState<string | null>(null)
 
   // Fetch analytics data
   const fetchAnalytics = async () => {
@@ -65,63 +66,91 @@ export default function InstagramCreatorDashboard({ userId }: { userId: number }
     }
   }
 
-  // Trigger scraping and poll for results
+  // Trigger scraping, then poll the job status rather than guessing from data.
+  //
+  // Previously this polled the analytics endpoint and compared scraped_at,
+  // which could not tell "still running" from "failed" — a failed scrape just
+  // timed out after 60s and left an empty dashboard with no explanation.
   const handleScrape = async () => {
     setScraping(true)
+    setScrapeError(null)
     try {
-      // Remember current scraped_at to detect fresh data
-      const previousScrapedAt = data?.profile?.scraped_at
+      await api.post(`/instagram/scrape/${userId}`)
 
-      const response = await api.post(`/instagram/scrape/${userId}`)
+      const maxAttempts = 24 // ~2 minutes
+      let attempt = 0
 
-      if (response.data.status === "scraping") {
-        // Poll for new data every 5 seconds, up to 60 seconds
-        const maxAttempts = 12
-        let attempt = 0
+      const poll = async () => {
+        attempt++
+        try {
+          const statusRes = await api.get(`/instagram/scrape-status/${userId}`)
+          const job = statusRes.data
 
-        const poll = async () => {
-          attempt++
-          try {
-            const pollRes = await api.get(`/instagram/analytics/${userId}`)
-            const newData = pollRes.data
-
-            // Check if we got fresh data (different scraped_at or new data where there was none)
-            if (
-              newData.status === "success" &&
-              newData.profile &&
-              newData.profile.scraped_at !== previousScrapedAt
-            ) {
-              setData(newData)
-              setScraping(false)
-              return
-            }
-          } catch {
-            // Ignore poll errors, keep trying
-          }
-
-          if (attempt < maxAttempts) {
-            setTimeout(poll, 5000)
-          } else {
-            // Timed out — fetch whatever is available
+          if (job.status === "success") {
             await fetchAnalytics()
             setScraping(false)
+            return
           }
+
+          if (job.status === "error") {
+            setScrapeError(job.message || "The import failed. Please try again.")
+            setScraping(false)
+            return
+          }
+        } catch {
+          // Transient poll failure — keep trying.
         }
 
-        // Start polling after initial 5-second delay
-        setTimeout(poll, 5000)
-      } else {
-        setScraping(false)
+        if (attempt < maxAttempts) {
+          setTimeout(poll, 5000)
+        } else {
+          await fetchAnalytics()
+          setScrapeError(
+            "This is taking longer than expected. Your data will appear here once the import finishes."
+          )
+          setScraping(false)
+        }
       }
+
+      setTimeout(poll, 3000)
     } catch (error) {
-      console.error("Failed to trigger scraping:", error)
+      setScrapeError(
+        error instanceof Error ? error.message : "Could not start the import."
+      )
       setScraping(false)
     }
   }
 
-  // Initial load
+  // Loads on mount and whenever the creator changes.
+  //
+  // The fetch is inlined and guarded rather than calling `fetchAnalytics()`
+  // directly: that set `loading` synchronously during the effect, which costs an
+  // extra render pass, and it could also write state after the component had
+  // unmounted. `loading` already starts true, so the initial spinner is
+  // unaffected.
   useEffect(() => {
-    fetchAnalytics()
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const response = await api.get(`/instagram/analytics/${userId}`)
+        if (!cancelled) setData(response.data)
+      } catch (error) {
+        console.error("Failed to fetch analytics:", error)
+        if (!cancelled) setData({
+        status: "error",
+        message: "Failed to fetch analytics data",
+        profile: null,
+        posts: []
+      })
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   const stats = useMemo(() => {
@@ -149,6 +178,14 @@ export default function InstagramCreatorDashboard({ userId }: { userId: number }
     return (
       <div className="text-center py-8 space-y-4">
         <p className="text-gray-500">{data?.message || "No Instagram profile data found"}</p>
+      {scrapeError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {scrapeError}
+        </p>
+      )}
         <Button 
           onClick={handleScrape} 
           disabled={scraping}
@@ -169,9 +206,18 @@ export default function InstagramCreatorDashboard({ userId }: { userId: number }
           disabled={scraping}
           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
         >
-          {scraping ? "Scraping..." : "Refresh Profile Data"}
+          {scraping ? "Importing…" : "Refresh Profile Data"}
         </Button>
       </div>
+
+      {scrapeError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {scrapeError}
+        </p>
+      )}
 
       {/* Profile Header */}
       <ProfileHeader profile={data.profile} />

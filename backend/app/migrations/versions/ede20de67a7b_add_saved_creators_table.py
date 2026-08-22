@@ -27,7 +27,12 @@ def upgrade() -> None:
         sa.Column('creator_id', sa.Integer(), nullable=False),
         sa.Column('fit_level', sa.String(), nullable=False),
         sa.Column('score_reasoning', sa.Text(), nullable=True),
-        sa.Column('saved_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        # CURRENT_TIMESTAMP, not now(): the latter is a PostgreSQL function, so
+        # any environment built from migrations on SQLite (tests, CI, local dev)
+        # raised "unknown function: now()" on the first insert. CURRENT_TIMESTAMP
+        # is standard SQL and behaves identically on PostgreSQL, so this is a
+        # no-op for databases where the migration has already run.
+        sa.Column('saved_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.ForeignKeyConstraint(['brand_id'], ['users.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['creator_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')

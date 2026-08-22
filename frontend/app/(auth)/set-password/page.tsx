@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FadeIn } from "@/components/motion/fade-in"
+import { errorMessage } from "@/lib/types"
 
 function SetPasswordForm() {
   const router = useRouter()
@@ -40,12 +41,8 @@ function SetPasswordForm() {
       const data = await setPassword({ setup_token: setupToken, password })
       localStorage.setItem("access_token", data.access_token)
       router.push(data.role === "BRAND" ? "/dashboard/brand" : "/dashboard/influencer")
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Something went wrong. Please try again."
-      setError(msg)
+    } catch (err) {
+      setError(errorMessage(err, "Something went wrong. Please try again."))
     } finally {
       setLoading(false)
     }

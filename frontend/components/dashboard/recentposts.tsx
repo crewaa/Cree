@@ -1,3 +1,5 @@
+import { Heart, MessageCircle } from "lucide-react"
+
 interface InstagramPost {
     id: number
     shortcode: string
@@ -28,8 +30,8 @@ function RecentPosts({ posts }: { posts: InstagramPost[] }) {
               </div>
   
               <div className="flex items-center gap-4 text-sm">
-                <span>❤️ {post.likes.toLocaleString()}</span>
-                <span>💬 {post.comments.toLocaleString()}</span>
+                <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {post.likes.toLocaleString()}</span>
+                <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {post.comments.toLocaleString()}</span>
                 {post.is_video && post.views && (
                   <span>▶ {post.views.toLocaleString()}</span>
                 )}

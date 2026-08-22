@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser, getSavedCreators } from "../../../../../lib/user";
+import { getSavedCreators } from "@/lib/user";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/axios";
+import { BrandProfile, CurrentUser, SavedCreator } from "@/lib/types"
+import { Sparkles } from "lucide-react";
 
 // Helper for parsing reasoning gracefully
-const getReasoningText = (reasoning: string | null) => {
+const getReasoningText = (reasoning: string | null | undefined) => {
   if (!reasoning) return "Discovered via AI matching.";
   if (reasoning.startsWith('[')) {
     try {
@@ -27,36 +30,24 @@ const fitColors: Record<string, string> = {
 }
 
 export default function Analytics() {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [creators, setCreators] = useState<any[]>([]);
+  // The session provider already supplies the user and enforces the role.
+  const { user } = useSession();
+  const [profile, setProfile] = useState<BrandProfile | null>(null);
+  const [creators, setCreators] = useState<SavedCreator[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
+    if (!user) return;
+
     async function loadDashboard() {
       try {
-        const userData = await getCurrentUser();
-        setUser(userData);
-
-        if (userData.role !== "BRAND") {
-          router.replace("/login");
-          return;
-        }
-
-        // Parallel fetch for profile and saved creators for fast loading
         const [profileRes, creatorsData] = await Promise.allSettled([
           api.get("/users/brand-profile"),
-          getSavedCreators()
+          getSavedCreators(),
         ]);
 
-        if (profileRes.status === "fulfilled") {
-          setProfile(profileRes.value.data);
-        }
-        if (creatorsData.status === "fulfilled") {
-          setCreators(creatorsData.value);
-        }
-
+        if (profileRes.status === "fulfilled") setProfile(profileRes.value.data);
+        if (creatorsData.status === "fulfilled") setCreators(creatorsData.value);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
       } finally {
@@ -64,7 +55,7 @@ export default function Analytics() {
       }
     }
     loadDashboard();
-  }, [router]);
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -153,7 +144,7 @@ export default function Analytics() {
 
         {creators.length === 0 ? (
           <div className="rounded-2xl border border-white/5 bg-[#0E1220]/50 p-12 text-center">
-            <p className="text-4xl mb-4">✨</p>
+            <Sparkles className="mx-auto mb-4 h-8 w-8 text-gray-600" aria-hidden="true" />
             <h3 className="text-lg font-medium text-white mb-2">No creators discovered yet</h3>
             <p className="text-gray-400 max-w-md mx-auto mb-6">
               Use the Discover Creators tool in Brand Studio to let AI find the perfect matches for your upcoming campaigns.

@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — tests & migrations
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    # Values below are throwaway CI settings, not secrets. The suite never
+    # reaches a real database or a third-party API.
+    env:
+      APP_NAME: Crewaa-CI
+      ENV: test
+      DATABASE_URL: sqlite+aiosqlite:///./ci.db
+      JWT_SECRET_KEY: ci-only-secret-not-used-in-any-real-environment
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      GOOGLE_CLIENT_ID: ci-client-id.apps.googleusercontent.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Import check
+        run: python -c "import app.main; print('app imports cleanly')"
+
+      - name: Prompt evals (replay)
+        # Offline: scores recorded responses, so it needs no API key and costs
+        # nothing. It cannot tell you the model got worse — only a `--live` run
+        # can do that — but it fails the build if a prompt or parser change
+        # breaks the pipeline, or if anonymity scrubbing stops working.
+        #
+        # Live runs are deliberately NOT here: they cost quota and are
+        # non-deterministic, and a flaky red build teaches people to ignore the
+        # suite. See backend/evals/README.md.
+        run: python -m evals.runner
+
+      - name: Migrations build a schema matching the models
+        # Guards against a repeat of revision dd173ce633c3, which silently
+        # dropped a table that the models still required.
+        run: |
+          rm -f ci.db
+          alembic upgrade head
+          python - <<'PY'
+          import sqlite3
+          from app.core.database import Base
+          import app.models  # noqa: F401  (registers every mapper)
+
+          con = sqlite3.connect("ci.db")
+          actual = {r[0] for r in con.execute(
+              "select name from sqlite_master where type='table'"
+          )}
+          actual -= {"alembic_version", "sqlite_sequence"}
+          expected = set(Base.metadata.tables)
+
+          missing = sorted(expected - actual)
+          extra = sorted(actual - expected)
+          if missing or extra:
+              raise SystemExit(
+                  f"Schema drift after `alembic upgrade head`.\n"
+                  f"  Missing tables: {missing}\n"
+                  f"  Unexpected tables: {extra}"
+              )
+          print(f"Schema matches the models ({len(expected)} tables).")
+          PY
+
+      - name: Migrations are re-runnable
+        run: alembic upgrade head
+
+      - name: Tests
+        run: pytest -q
+
+  frontend:
+    name: Frontend — lint, typecheck & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ci-client-id.apps.googleusercontent.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+  secret-scan:
+    name: No credentials in the diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject committed connection strings and API keys
+        # A live Neon connection string was previously committed in
+        # backend/alembic.ini. This makes that class of mistake fail the build.
+        #
+        # Documentation and setup templates legitimately contain example URLs,
+        # so obvious placeholders are filtered out rather than excluded by path
+        # — that way a real credential pasted into a README still fails.
+        run: |
+          set +e
+          PATTERNS='postgres(ql)?(\+[a-z0-9]+)?://[^:]+:[^@]+@|AIzaSy[0-9A-Za-z_-]{20,}|apify_api_[0-9A-Za-z]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+          PLACEHOLDERS='USER:PASSWORD|user:password|postgres:password|USERNAME:PASSWORD|<[^>]*>|\$\{|CHANGEME|changeme|xxx+|\.\.\.'
+          MATCHES=$(grep -rInE "$PATTERNS" . \
+            --exclude-dir=.git \
+            --exclude-dir=node_modules \
+            --exclude-dir=.next \
+            --exclude-dir=.venv \
+            --exclude='*.lock' \
+            --exclude='pnpm-lock.yaml' \
+            --exclude='ci.yml' \
+            | grep -vE "$PLACEHOLDERS")
+          if [ -n "$MATCHES" ]; then
+            echo "::error::Possible credential committed to the repository:"
+            echo "$MATCHES"
+            exit 1
+          fi
+          echo "No credentials detected."

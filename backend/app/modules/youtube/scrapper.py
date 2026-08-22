@@ -1,6 +1,8 @@
 import httpx
 from typing import Dict, Any
+
 from app.core.config import settings
+from app.core.logging import logger
 
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 VIDEO_LIMIT = 15
@@ -118,7 +120,7 @@ async def scrape_youtube_channel(username: str) -> Dict[str, Any]:
                             "published_at": video["snippet"]["publishedAt"],
                         })
                     except (KeyError, ValueError) as e:
-                        print(f"⚠️ Error parsing video: {e}")
+                        logger.warning("Error parsing YouTube video: {}", e)
                         continue
             
             return {

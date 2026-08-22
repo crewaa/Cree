@@ -13,6 +13,7 @@ dependencies = [
 
   # Database
   "sqlalchemy>=2.0",
+  "greenlet",
   "asyncpg",
   "alembic",
   "psycopg2-binary",
@@ -28,16 +29,33 @@ dependencies = [
 
   # Utilities
   "loguru",
+
+  # Error tracking (inert unless SENTRY_DSN is set)
+  "sentry-sdk[fastapi]",
   "python-dateutil",
 
   # AI Engine
-  "google-generativeai",
+  "google-genai",
 
-  # Apify & Cache
+  # Instagram scraping
   "apify-client",
-  "redis",
+]
 
-  # Testing
+[project.optional-dependencies]
+dev = [
   "pytest",
-  "pytest-asyncio"
+  "pytest-asyncio",
+  "aiosqlite",   # in-memory database for the test suite
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+  "ignore::DeprecationWarning",
+  "ignore::FutureWarning",
 ]

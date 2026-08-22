@@ -1,3 +1,5 @@
+import { BadgeCheck } from "lucide-react"
+
 interface ProfileData {
     full_name?: string
     username: string
@@ -26,7 +28,7 @@ function ProfileHeader({ profile }: { profile: ProfileData }) {
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold">{profile.full_name || profile.username}</h2>
             {profile.is_verified && (
-              <span className="text-blue-500">✔</span>
+              <BadgeCheck className="h-4 w-4 text-blue-500" aria-label="Verified" />
             )}
           </div>
   

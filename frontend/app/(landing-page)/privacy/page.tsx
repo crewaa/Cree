@@ -26,7 +26,7 @@ export default function PrivacyPage() {
             <p>
               When you sign up for Crewaa, we collect information you provide directly — such as your name,
               email address, role (brand or creator), and profile details. If you sign in with Google, we
-              receive your name and email from Google's OAuth service. We do not access your Google account
+              receive your name and email from Google&apos;s OAuth service. We do not access your Google account
               beyond what is required for authentication.
             </p>
             <p className="mt-3">
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-3">
               Creator profile data (such as social media usernames and public metrics) may be visible to
-              brands using the platform for discovery purposes — this is core to Crewaa's functionality.
+              brands using the platform for discovery purposes — this is core to Crewaa&apos;s functionality.
             </p>
           </section>
 
@@ -106,8 +106,8 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">8. Changes to This Policy</h2>
             <p>
-              We may update this Privacy Policy from time to time. When we do, we'll update the "last
-              updated" date at the top of this page. Continued use of Crewaa after any changes constitutes
+              We may update this Privacy Policy from time to time. When we do, we&apos;ll update the &quot;last
+              updated&quot; date at the top of this page. Continued use of Crewaa after any changes constitutes
               your acceptance of the updated policy.
             </p>
           </section>

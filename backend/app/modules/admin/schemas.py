@@ -8,6 +8,7 @@ class PlatformStats(BaseModel):
     total_creators: int
     total_brands: int
     total_admins: int
+    new_users_last_7_days: int
 
     class Config:
         from_attributes = True
@@ -19,6 +20,7 @@ class AdminUserListItem(BaseModel):
     role: str
     is_active: bool
     has_profile: bool = False
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -29,6 +31,7 @@ class AdminUserDetail(BaseModel):
     email: str
     role: str
     is_active: bool
+    created_at: datetime
 
     # Creator profile fields (if role == INFLUENCER)
     creator_full_name: Optional[str] = None
@@ -39,6 +42,8 @@ class AdminUserDetail(BaseModel):
     creator_youtube_username: Optional[str] = None
     creator_bio: Optional[str] = None
     creator_profile_completed: bool = False
+    #: What is missing, so the flag is actionable rather than just red.
+    creator_profile_missing: list[str] = []
 
     # Brand profile fields (if role == BRAND)
     brand_name: Optional[str] = None
@@ -48,6 +53,7 @@ class AdminUserDetail(BaseModel):
     brand_campaign_goal: Optional[str] = None
     brand_budget_range: Optional[str] = None
     brand_profile_completed: bool = False
+    brand_profile_missing: list[str] = []
 
     class Config:
         from_attributes = True

@@ -1,9 +1,15 @@
 "use client"
-import { AICard } from "../../../../components/dashboard/ai-studio-layout"
+import { Sparkles } from "lucide-react"
+import { AICard } from "@/components/dashboard/ai-studio-layout"
+import { useHasCreatorProfile } from "@/lib/profile-status"
 
 export default function InfluencerStudio() {
+  // Gate the AI tools until a profile exists — they cannot work without one.
+  const { hasProfile, loading } = useHasCreatorProfile()
+  const locked = !loading && hasProfile === false
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
 
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
@@ -24,6 +30,17 @@ export default function InfluencerStudio() {
           Everything creators need to grow with AI.
         </p>
 
+        {locked && (
+          <div className="mt-8 flex max-w-xl items-start gap-3 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07] px-5 py-4 text-left">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" aria-hidden="true" />
+            <p className="text-sm text-cyan-100/90">
+              <span className="font-medium">One step to go.</span> Add your creator
+              profile and social handles — we&apos;ll pull in your analytics and unlock
+              your AI tools.
+            </p>
+          </div>
+        )}
+
         <div className="mt-16 grid max-w-6xl gap-10 md:grid-cols-3">
           <AICard
             title="Brand Deals"
@@ -31,6 +48,10 @@ export default function InfluencerStudio() {
             action="View Deals"
             accent="indigo"
             href="/dashboard/influencer/deals"
+            locked={locked}
+            lockedReason="Add your profile so we can match you to brands"
+            lockedHref="/dashboard/profile"
+            lockedAction="Complete your profile"
           />
 
           <AICard
@@ -39,6 +60,10 @@ export default function InfluencerStudio() {
             action="Analyze Profile"
             accent="cyan"
             href="/dashboard/influencer/growth-analyzer"
+            locked={locked}
+            lockedReason="Link your Instagram or YouTube to analyse your growth"
+            lockedHref="/dashboard/profile"
+            lockedAction="Complete your profile"
           />
 
           <AICard

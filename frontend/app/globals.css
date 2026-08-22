@@ -195,3 +195,18 @@
   }
 }
 
+
+
+/*
+ * Dashboard surface.
+ *
+ * The (app) route group paints a dark shell, but <body> still carried the light
+ * theme token underneath, which showed as a white flash when overscrolling.
+ * DashboardShell adds this class while mounted and removes it on unmount, so
+ * the marketing and auth pages keep their own background.
+ */
+html.app-dark,
+html.app-dark body {
+  background-color: #06070C;
+  color-scheme: dark;
+}

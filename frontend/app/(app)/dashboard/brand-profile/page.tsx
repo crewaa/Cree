@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/axios"
+import { errorMessage } from "@/lib/types"
+import { useToast } from "@/components/ui/toast"
+import { Instagram, Youtube } from "lucide-react"
 
 type BrandProfile = {
   id?: number
@@ -25,6 +28,7 @@ const INDUSTRY_OPTIONS = [
 ]
 
 export default function BrandProfilePage() {
+  const toast = useToast()
   const router = useRouter()
   const [profile, setProfile] = useState<BrandProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -88,8 +92,8 @@ export default function BrandProfilePage() {
         await api.post("/users/brand-profile", payload)
       }
       router.replace("/dashboard/brand")
-    } catch (err: any) {
-      alert(err?.response?.data?.detail || "Failed to save profile")
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to save profile"))
     } finally {
       setSaving(false)
     }
@@ -114,7 +118,7 @@ export default function BrandProfilePage() {
   })()
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#06070C] text-white">
+    <div className="relative relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-[-20%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-cyan-500/15 blur-[160px]" />
@@ -193,9 +197,9 @@ export default function BrandProfilePage() {
                   defaultValue={profile.campaign_goal}
                   className="w-full bg-[#0E1220] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50"
                 >
-                  <option value="Awareness">📢 Awareness</option>
-                  <option value="Sales">🛒 Sales</option>
-                  <option value="Engagement">💬 Engagement</option>
+                  <option value="Awareness">Awareness</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Engagement">Engagement</option>
                 </select>
               </div>
               <div>
@@ -205,9 +209,9 @@ export default function BrandProfilePage() {
                   defaultValue={profile.budget_range}
                   className="w-full bg-[#0E1220] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50"
                 >
-                  <option value="Low">💰 Low</option>
-                  <option value="Mid">💰💰 Mid</option>
-                  <option value="High">💰💰💰 High</option>
+                  <option value="Low">Low</option>
+                  <option value="Mid">Mid</option>
+                  <option value="High">High</option>
                 </select>
               </div>
             </div>
@@ -246,7 +250,7 @@ export default function BrandProfilePage() {
                     defaultChecked={existingPlatforms.includes("instagram")}
                     className="accent-indigo-500"
                   />
-                  <span className="text-sm text-gray-300">📸 Instagram</span>
+                  <span className="flex items-center gap-1.5 text-sm text-gray-300"><Instagram className="h-3.5 w-3.5" /> Instagram</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -255,7 +259,7 @@ export default function BrandProfilePage() {
                     defaultChecked={existingPlatforms.includes("youtube")}
                     className="accent-indigo-500"
                   />
-                  <span className="text-sm text-gray-300">▶️ YouTube</span>
+                  <span className="flex items-center gap-1.5 text-sm text-gray-300"><Youtube className="h-3.5 w-3.5" /> YouTube</span>
                 </label>
               </div>
             </div>

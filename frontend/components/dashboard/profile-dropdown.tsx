@@ -15,7 +15,12 @@ import { logout } from "../../lib/auth";
 
 interface Props {
   user: {
-    name: string;
+    /**
+     * Optional: `GET /users/me` returns only {id, email, role}, so this is
+     * usually absent. It used to be typed as required, and the component
+     * rendered a blank line for every user because the value was undefined.
+     */
+    name?: string;
     email: string;
     role?: string;
     avatarUrl?: string;
@@ -40,15 +45,17 @@ export default function ProfileDropdown({ user }: Props) {
         <Avatar className="h-9 w-9 cursor-pointer">
           <AvatarImage src={user.avatarUrl} />
           <AvatarFallback>
-            {user?.name?.charAt(0)?.toLowerCase() ?? "U"}
+            {(user.name || user.email)?.charAt(0)?.toUpperCase() ?? "U"}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
-          <p className="text-sm font-medium">{user.name}</p>
-          <p className="text-xs text-muted-foreground">{user.email}</p>
+          <p className="text-sm font-medium">{user.name || user.email}</p>
+          {user.name && (
+            <p className="text-xs text-muted-foreground">{user.email}</p>
+          )}
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />

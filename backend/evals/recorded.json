@@ -1,0 +1,152 @@
+{
+  "_note": [
+    "Stand-in responses, hand-written, NOT captured from Gemini.",
+    "The sandbox this suite was written in had no network route to Google, so",
+    "there was no way to record real output. They are shaped like a good answer",
+    "so that replay mode exercises the scorer and the parsing end to end.",
+    "",
+    "Replace them the first time you can reach the API:",
+    "    python -m evals.runner --live --record",
+    "That overwrites this file with real responses and writes a real baseline.",
+    "Until then, treat a green replay run as 'the pipeline works', never as",
+    "'the model is good' — replay cannot measure a model it never called."
+  ],
+
+  "ranking:niche-match-beats-reach": {
+    "ranked_creators": [
+      {"creator_id": "1", "creator_name": "Aarav Mehta", "fit_level": "High",
+       "score_reasoning": ["Fitness niche matches the campaign directly.",
+                           "142k followers at 4.9% engagement is strong for the band.",
+                           "Based in Mumbai, the target location."],
+       "risks": ["Posting cadence has slowed recently."],
+       "recommended_campaign_type": "Sponsored Reel + Story series"},
+      {"creator_id": "5", "creator_name": "Kabir Shah", "fit_level": "High",
+       "score_reasoning": ["Calisthenics audience overlaps the campaign.",
+                           "11.2% engagement is exceptional for the niche."],
+       "risks": ["Small reach; would need several creators to hit volume."],
+       "recommended_campaign_type": "Sponsored Reel"},
+      {"creator_id": "2", "creator_name": "Diya Kapoor", "fit_level": "Low",
+       "score_reasoning": ["Beauty audience, limited overlap with sports nutrition."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "3", "creator_name": "Rohan Iyer", "fit_level": "Low",
+       "score_reasoning": ["Large reach but a technology audience."],
+       "risks": ["Audience unlikely to convert on nutrition."],
+       "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "4", "creator_name": "Meera Nair", "fit_level": "Low",
+       "score_reasoning": ["Food adjacency only; home cooking, not sports nutrition."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"}
+    ],
+    "final_recommendation": "Prioritise Aarav for reach and Kabir for engagement."
+  },
+
+  "ranking:wrong-niche-is-not-high-fit": {
+    "ranked_creators": [
+      {"creator_id": "2", "creator_name": "Diya Kapoor", "fit_level": "High",
+       "score_reasoning": ["Beauty creator, exactly the campaign niche.",
+                           "Located in Bengaluru, the target city.",
+                           "6.2% engagement is above benchmark."],
+       "risks": ["Reviews are candid; expect honest commentary."],
+       "recommended_campaign_type": "Product Review"},
+      {"creator_id": "4", "creator_name": "Meera Nair", "fit_level": "Low",
+       "score_reasoning": ["Lifestyle adjacency only."],
+       "risks": ["Not a beauty audience."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "1", "creator_name": "Aarav Mehta", "fit_level": "Low",
+       "score_reasoning": ["Fitness audience, little beauty overlap."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "5", "creator_name": "Kabir Shah", "fit_level": "Low",
+       "score_reasoning": ["Fitness audience, little beauty overlap."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "3", "creator_name": "Rohan Iyer", "fit_level": "Low",
+       "score_reasoning": ["Technology audience."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"}
+    ],
+    "final_recommendation": "Only one creator genuinely fits; consider widening the brief."
+  },
+
+  "ranking:thin-niche-still-returns-something": {
+    "ranked_creators": [
+      {"creator_id": "3", "creator_name": "Rohan Iyer", "fit_level": "Medium",
+       "score_reasoning": ["Reviews camera gear occasionally, the closest adjacency available."],
+       "risks": ["Not a photography creator."], "recommended_campaign_type": "Product Review"},
+      {"creator_id": "4", "creator_name": "Meera Nair", "fit_level": "Low",
+       "score_reasoning": ["Food photography is visually adjacent but a different audience."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "2", "creator_name": "Diya Kapoor", "fit_level": "Low",
+       "score_reasoning": ["Visual content, but a beauty audience."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "1", "creator_name": "Aarav Mehta", "fit_level": "Low",
+       "score_reasoning": ["No photography relevance."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "5", "creator_name": "Kabir Shah", "fit_level": "Low",
+       "score_reasoning": ["No photography relevance."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"}
+    ],
+    "final_recommendation": "No strong match on the platform yet for this niche."
+  },
+
+  "ranking:location-is-a-tiebreaker-not-a-filter": {
+    "ranked_creators": [
+      {"creator_id": "1", "creator_name": "Aarav Mehta", "fit_level": "High",
+       "score_reasoning": ["Fitness niche match outweighs the location difference.",
+                           "Strong engagement for the follower band."],
+       "risks": ["Based in Mumbai, not the target city."],
+       "recommended_campaign_type": "Sponsored Reel"},
+      {"creator_id": "5", "creator_name": "Kabir Shah", "fit_level": "Medium",
+       "score_reasoning": ["Fitness niche match; very high engagement."],
+       "risks": ["Small reach and outside the target city."],
+       "recommended_campaign_type": "Sponsored Reel"},
+      {"creator_id": "4", "creator_name": "Meera Nair", "fit_level": "Medium",
+       "score_reasoning": ["Located in Kochi, the target city.",
+                           "8.4% engagement is the highest in the set."],
+       "risks": ["Food audience, not fitness."],
+       "recommended_campaign_type": "Recipe integration"},
+      {"creator_id": "2", "creator_name": "Diya Kapoor", "fit_level": "Low",
+       "score_reasoning": ["Beauty audience."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"},
+      {"creator_id": "3", "creator_name": "Rohan Iyer", "fit_level": "Low",
+       "score_reasoning": ["Technology audience."],
+       "risks": ["Niche mismatch."], "recommended_campaign_type": "Not recommended"}
+    ],
+    "final_recommendation": "Niche match should lead; treat Kochi as a tiebreaker."
+  },
+
+  "ranking:engagement-quality-is-considered": {
+    "ranked_creators": [
+      {"creator_id": "5", "creator_name": "Kabir Shah", "fit_level": "High",
+       "score_reasoning": ["11.2% engagement rate, more than double the alternative.",
+                           "The campaign goal is Engagement, not reach."],
+       "risks": ["9.4k followers caps total volume."],
+       "recommended_campaign_type": "Sponsored Reel"},
+      {"creator_id": "1", "creator_name": "Aarav Mehta", "fit_level": "High",
+       "score_reasoning": ["Much larger reach with solid 4.9% engagement.",
+                           "Same niche and city."],
+       "risks": ["Lower engagement rate than the alternative."],
+       "recommended_campaign_type": "Sponsored Reel + Story series"}
+    ],
+    "final_recommendation": "Kabir for engagement efficiency, Aarav for absolute reach."
+  },
+
+  "opportunity:strong-match-reads-as-strong": {
+    "fit_level": "High",
+    "industry_hint": "Health & Nutrition",
+    "why_it_fits": ["Your training audience matches the campaign's target.",
+                    "Your engagement is above benchmark for your follower band.",
+                    "The campaign is running in your city."],
+    "what_to_expect": "A single reel filmed during a normal training session, plus two story frames."
+  },
+
+  "opportunity:mismatch-is-not-oversold": {
+    "fit_level": "Low",
+    "industry_hint": "Health & Nutrition",
+    "why_it_fits": ["Some overlap through food and nutrition content."],
+    "what_to_expect": "A short reel featuring the product, though your audience may not be the intended one."
+  },
+
+  "opportunity:brand-identity-never-leaks": {
+    "fit_level": "High",
+    "industry_hint": "Beauty & Personal Care",
+    "why_it_fits": ["Your skincare audience is the campaign's target.",
+                    "Honest-review format suits a product launch."],
+    "what_to_expect": "One in-feed reel reviewing the product, plus supporting story frames."
+  }
+}

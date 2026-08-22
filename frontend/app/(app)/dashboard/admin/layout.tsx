@@ -1,44 +1,26 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { getCurrentUser } from "@/lib/user"
+import { useSession } from "@/lib/session"
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const router = useRouter()
-  const [authorized, setAuthorized] = useState(false)
+/**
+ * Admin section wrapper.
+ *
+ * The role check now reads the shared session rather than issuing its own
+ * `/users/me` request — opening an admin page previously cost two identical
+ * round-trips. `SessionProvider` already redirects a non-admin away from
+ * `/dashboard/admin`, so this only has to handle the loading state.
+ */
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useSession()
 
-  useEffect(() => {
-    async function checkAdmin() {
-      try {
-        const user = await getCurrentUser()
-        if (user.role !== "ADMIN") {
-          router.replace("/login")
-          return
-        }
-        setAuthorized(true)
-      } catch {
-        router.replace("/login")
-      }
-    }
-    checkAdmin()
-  }, [router])
-
-  if (!authorized) {
+  if (loading || user?.role !== "ADMIN") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#06070C]">
+      <div className="flex min-h-[60vh] items-center justify-center" aria-busy="true">
+        <span className="sr-only">Loading the admin console…</span>
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen">
-      <main className="p-6">{children}</main>
-    </div>
-  )
+  return <main className="p-6">{children}</main>
 }

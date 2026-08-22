@@ -48,6 +48,7 @@ export default function YouTubeCreatorDashboard({ userId }: { userId: number }) 
   const [data, setData] = useState<YouTubeAnalyticsResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [scraping, setScraping] = useState(false)
+  const [scrapeError, setScrapeError] = useState<string | null>(null)
 
   // Fetch analytics data
   const fetchAnalytics = async () => {
@@ -72,26 +73,83 @@ export default function YouTubeCreatorDashboard({ userId }: { userId: number }) 
   const handleScrape = async () => {
     setScraping(true)
     try {
-      const response = await api.post(`/youtube/scrape/${userId}`)
-      
-      if (response.data.status === "scraping") {
-        // Scraping started in background, wait a bit then fetch
-        setTimeout(() => {
-          fetchAnalytics()
+      await api.post(`/youtube/scrape/${userId}`)
+
+      // Poll the job record instead of blindly waiting 3 seconds and hoping.
+      const maxAttempts = 24 // ~2 minutes
+      let attempt = 0
+
+      const poll = async () => {
+        attempt++
+        try {
+          const statusRes = await api.get(`/youtube/scrape-status/${userId}`)
+          const job = statusRes.data
+
+          if (job.status === "success") {
+            await fetchAnalytics()
+            setScraping(false)
+            return
+          }
+
+          if (job.status === "error") {
+            setScrapeError(job.message || "The import failed. Please try again.")
+            setScraping(false)
+            return
+          }
+        } catch {
+          // Transient poll failure — keep trying.
+        }
+
+        if (attempt < maxAttempts) {
+          setTimeout(poll, 5000)
+        } else {
+          await fetchAnalytics()
+          setScrapeError(
+            "This is taking longer than expected. Your data will appear here once the import finishes."
+          )
           setScraping(false)
-        }, 3000)
-      } else {
-        setScraping(false)
+        }
       }
+
+      setTimeout(poll, 3000)
     } catch (error) {
-      console.error("Failed to trigger scraping:", error)
+      setScrapeError(
+        error instanceof Error ? error.message : "Could not start the import."
+      )
       setScraping(false)
     }
   }
 
-  // Initial load
+  // Loads on mount and whenever the creator changes.
+  //
+  // The fetch is inlined and guarded rather than calling `fetchAnalytics()`
+  // directly: that set `loading` synchronously during the effect, which costs an
+  // extra render pass, and it could also write state after the component had
+  // unmounted. `loading` already starts true, so the initial spinner is
+  // unaffected.
   useEffect(() => {
-    fetchAnalytics()
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const response = await api.get(`/youtube/analytics/${userId}`)
+        if (!cancelled) setData(response.data)
+      } catch (error) {
+        console.error("Failed to fetch analytics:", error)
+        if (!cancelled) setData({
+        status: "error",
+        message: "Failed to fetch analytics data",
+        channel: null,
+        videos: []
+      })
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId])
 
   const stats = useMemo(() => {
@@ -118,6 +176,14 @@ export default function YouTubeCreatorDashboard({ userId }: { userId: number }) 
     return (
       <div className="text-center py-8 space-y-4">
         <p className="text-gray-500">{data?.message || "No YouTube channel data found"}</p>
+      {scrapeError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {scrapeError}
+        </p>
+      )}
         <Button 
           onClick={handleScrape} 
           disabled={scraping}
@@ -138,9 +204,18 @@ export default function YouTubeCreatorDashboard({ userId }: { userId: number }) 
           disabled={scraping}
           className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
         >
-          {scraping ? "Scraping..." : "Refresh Channel Data"}
+          {scraping ? "Importing…" : "Refresh Channel Data"}
         </Button>
       </div>
+
+      {scrapeError && (
+        <p
+          role="alert"
+          className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300"
+        >
+          {scrapeError}
+        </p>
+      )}
 
       {/* Channel Header */}
       <ProfileHeader 

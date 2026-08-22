@@ -10,11 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { GoogleAuthButton } from "@/components/auth/google-signup-button"
+import { errorMessage } from "@/lib/types"
+import { SLOW_REQUEST_MESSAGE, useSlowRequestHint } from "@/lib/slow-request"
 
 export default function BrandSignupPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const slow = useSlowRequestHint(loading)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -22,7 +25,7 @@ export default function BrandSignupPage() {
     setLoading(true)
 
     const form = e.currentTarget
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim()
     const password = (form.elements.namedItem("password") as HTMLInputElement).value
 
     try {
@@ -34,8 +37,8 @@ export default function BrandSignupPage() {
 
       localStorage.setItem("access_token", data.access_token)
       router.push("/dashboard/brand-profile")
-    } catch (err: any) {
-      setError(err?.message || "Signup failed. Please try again.")
+    } catch (err) {
+      setError(errorMessage(err, "Signup failed. Please try again."))
     } finally {
       setLoading(false)
     }
@@ -92,6 +95,12 @@ export default function BrandSignupPage() {
         >
           {loading ? "Creating account..." : "Sign up"}
         </Button>
+
+        {slow && (
+          <p className="text-center text-xs text-gray-400" role="status">
+            {SLOW_REQUEST_MESSAGE}
+          </p>
+        )}
       </form>
 
       <div className="mt-6 space-y-4">

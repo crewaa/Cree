@@ -113,7 +113,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">9. Disclaimer of Warranties</h2>
             <p>
-              Crewaa is provided "as is" and "as available" without warranties of any kind, either express
+              Crewaa is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind, either express
               or implied. We do not guarantee that the platform will be uninterrupted, error-free, or
               free of bugs. Use of the platform is at your own risk.
             </p>

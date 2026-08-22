@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
+import { Instagram, Youtube } from "lucide-react";
 
 type CreatorProfile = {
   id?: number;
@@ -23,6 +25,7 @@ type CreatorProfile = {
 
 export default function CreatorProfilePage() {
   const router = useRouter();
+  const toast = useToast();
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,47 +92,27 @@ export default function CreatorProfilePage() {
         savedProfile = res.data;
       }
 
-      // Trigger scraping for Instagram if username changed or exists
-      const newInstagramUsername = savedProfile.instagram_username ?? "";
-      const previousInstagramUsername = previousInstagramRef.current ?? "";
-
-      if (
-        savedProfile.id &&
-        newInstagramUsername &&
-        previousInstagramUsername !== newInstagramUsername
-      ) {
-        try {
-          await api.post(`/instagram/scrape/${savedProfile.id}`);
-          console.log("Instagram scraping started");
-        } catch (scrapeErr) {
-          console.warn("Instagram scrape failed:", scrapeErr);
-        }
-      }
-
-      // Trigger scraping for YouTube if username changed or exists
-      const newYoutubeUsername = savedProfile.youtube_username ?? "";
-      const previousYoutubeUsername = previousYoutubeRef.current ?? "";
-
-      if (
-        savedProfile.id &&
-        newYoutubeUsername &&
-        previousYoutubeUsername !== newYoutubeUsername
-      ) {
-        try {
-          await api.post(`/youtube/scrape/${savedProfile.id}`);
-          console.log("YouTube scraping started");
-        } catch (scrapeErr) {
-          console.warn("YouTube scrape failed:", scrapeErr);
-        }
-      }
+      // NOTE: scraping is NOT triggered from here.
+      //
+      // This used to POST /instagram/scrape/${savedProfile.id} and
+      // /youtube/scrape/${savedProfile.id}. That was a bug: savedProfile.id is
+      // creator_profiles.id, while those endpoints are keyed on users.id. The two
+      // only coincide for early sequential test data.
+      //
+      // The backend already queues both scrapes with the correct id inside
+      // POST/PUT /users/creator-profile, so these calls were redundant as well as
+      // wrongly targeted. Deleted rather than corrected.
 
       setProfile(savedProfile);
-      previousInstagramRef.current = newInstagramUsername;
-      previousYoutubeRef.current = newYoutubeUsername;
+      previousInstagramRef.current = savedProfile.instagram_username ?? "";
+      previousYoutubeRef.current = savedProfile.youtube_username ?? "";
 
+      toast.success("Profile saved. We're fetching your analytics now.");
       router.replace("/dashboard/analytics/influencer");
-    } catch (err: any) {
-      alert(err?.response?.data?.detail || "Failed to save profile");
+    } catch (err) {
+      // The axios interceptor throws an ApiError whose message is the backend
+      // `detail`, so reading err.message is correct here.
+      toast.error(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
       setSaving(false);
     }
@@ -214,7 +197,7 @@ export default function CreatorProfilePage() {
           {/* Instagram Section */}
           <div className="space-y-4 p-4 border rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span>📸</span> Instagram
+              <Instagram className="h-4 w-4" /> Instagram
             </h2>
 
             <div>
@@ -246,7 +229,7 @@ export default function CreatorProfilePage() {
           {/* YouTube Section */}
           <div className="space-y-4 p-4 border rounded-lg bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span>▶️</span> YouTube
+              <Youtube className="h-4 w-4" /> YouTube
             </h2>
 
             <div>

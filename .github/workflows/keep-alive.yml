@@ -5,6 +5,12 @@ name: Keep backend alive
 # minutes keeps it warm. This is a mitigation, not a fix — it does not help
 # the very first visitor of the day, and it also gives Neon's free-tier
 # compute a steady trickle of activity so it's less likely to autosuspend.
+#
+# GitHub's own scheduler does not honour */10 reliably (observed gaps of
+# 25-50 minutes on this repo, well past Render's own 15-minute sleep
+# threshold), so treat every ping as a potential cold start rather than a
+# warm no-op: a generous --max-time plus retries, instead of failing the
+# run the moment a cold boot takes longer than a few seconds to answer.
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -15,4 +21,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping /health
-        run: curl -sf --max-time 20 https://crewaa.onrender.com/health
+        run: curl -sf --max-time 90 --retry 2 --retry-delay 5 https://crewaa.onrender.com/health

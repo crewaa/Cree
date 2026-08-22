@@ -11,6 +11,7 @@ creates the engine at import time.
 """
 
 import os
+import tempfile
 
 os.environ.setdefault("APP_NAME", "Crewaa-Test")
 os.environ.setdefault("ENV", "test")
@@ -81,10 +82,28 @@ def _no_real_scrapes(monkeypatch):
 
 @pytest_asyncio.fixture
 async def session_factory():
-    """A fresh in-memory database per test."""
+    """A fresh SQLite database per test, backed by a temp file."""
+    # A bare `:memory:` URL was tried first and is wrong for concurrency
+    # tests: SQLAlchemy's default async pool opens a new physical connection
+    # per concurrent checkout, and each `:memory:` connection is its own
+    # separate, isolated database — so concurrent signups for the same email
+    # could land on different empty databases and both "win". Forcing every
+    # checkout onto one shared connection (`poolclass=StaticPool`) was tried
+    # next and is also wrong: concurrent AsyncSessions then share one
+    # DBAPI-level transaction, so a second session's uncommitted insert
+    # becomes visible to a first session that hasn't committed yet, and both
+    # could get past the pre-check and insert.
+    #
+    # A temp file, left on the default pool (a real connection per checkout)
+    # with a busy timeout, is what makes this behave like production
+    # Postgres: independent connections, and SQLite's own file write-lock
+    # serialises concurrent writers instead of erroring immediately, giving
+    # the loser of a race a real IntegrityError on its own connection rather
+    # than corrupted shared transaction state.
+    db_path = tempfile.NamedTemporaryFile(suffix=".db", delete=False).name
     engine = create_async_engine(
-        "sqlite+aiosqlite://",
-        connect_args={"check_same_thread": False},
+        f"sqlite+aiosqlite:///{db_path}",
+        connect_args={"check_same_thread": False, "timeout": 5},
     )
 
     # SQLite ignores foreign keys unless asked. Without this, ON DELETE CASCADE
@@ -95,14 +114,13 @@ async def session_factory():
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
-    # A single shared connection keeps the in-memory DB alive for the test and
-    # makes the app and the test see the same data.
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     factory = async_sessionmaker(engine, expire_on_commit=False)
     yield factory
     await engine.dispose()
+    os.remove(db_path)
 
 
 @pytest_asyncio.fixture

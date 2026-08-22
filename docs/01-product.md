@@ -25,11 +25,13 @@ Signs up, fills in a creator profile with their Instagram and/or YouTube handle.
 A third card, **Creator Support** (human content-production services), is shown as "Coming Soon" **[V]**.
 
 ### Brand (`role = "BRAND"`)
-Signs up, fills in a brand profile (industry, campaign goal, budget band, target location/languages, platform preferences). Their one live tool:
+Signs up, fills in a brand profile (industry, campaign goal, budget band, target location/languages, platform preferences). Three live tools:
 
 - **Discover Creators** — submit campaign requirements, get an AI-ranked list of creators with fit level (High/Medium/Low), reasoning, risks and a recommended campaign type. Results are automatically persisted to `saved_creators` and surface on the brand dashboard.
+- **Campaigns** — create a campaign with a stated fee, deliverables and deadline; creators see the real terms (not an AI estimate) and can express interest.
+- **Interested Creators** — the inbox of creators who responded to a campaign or AI-matched opportunity, with contact details and stats.
 
-Two cards, **AI Influencer** (AI-generated virtual influencers) and **AI Marketing Suite**, are "Coming Soon" **[V]**.
+Two more cards, **AI Influencer** (AI-generated virtual influencers) and **AI Marketing Suite**, are shown as "Coming Soon" **[V]**.
 
 ### Admin (`role = "ADMIN"`)
 Cannot be created through signup **[V]** — `signup_user()` rejects the ADMIN role, and admins are seeded via `python seed_admin.py`. Admins get platform stats and full user CRUD, but **cannot delete other admins** **[V]** (`admin/service.py:delete_user`).

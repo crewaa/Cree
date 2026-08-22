@@ -76,6 +76,20 @@ export default function BrandStudio() {
             lockedHref="/dashboard/brand-profile"
             lockedAction="Complete brand profile"
           />
+
+          <AICard
+            title="AI Influencer"
+            description="Create AI-powered virtual influencers tailored to your brand, ready to front campaigns without relying on a human creator."
+            badge="Coming Soon"
+            accent="indigo"
+          />
+
+          <AICard
+            title="AI Marketing Suite"
+            description="Run intelligent, data-driven marketing campaigns with AI — from content strategy to performance optimization."
+            badge="Coming Soon"
+            accent="cyan"
+          />
         </div>
       </main>
     </div>
